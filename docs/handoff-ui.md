@@ -75,6 +75,45 @@ Apri una sessione in questa cartella e parti da qui.
 - Doppio orientamento nel mockup: default **verticale** per ESP32-DIV V2;
   font più grande in verticale nelle sotto-schermate; griglia menu a pieno schermo.
 
+## Aggiornamento 2026-09-27 (sera) — pinout reale + moduli radio
+**PlatformIO installato** (`~/.local/bin/pio`, v6.2.0). Il firmware **compila
+pulito** (`pio run -e esp32-div-v2`): ultimo build **1,35 MB**, RAM 20%, Flash
+42% dello slot app di default (16 MB reali → ~8%).
+
+**Moduli REALI ora nel firmware** (compilano): WiFi scan, BLE scan, **NRF24
+spettro 2.4 GHz**, **IR cattura**. Boot+avviso, menu, doppio orientamento (NVS).
+
+**PINOUT UFFICIALE ESP32-DIV V2** (ricavato dai sorgenti CiferTech, ramo
+`BOARD_ESP32_DIV_V2` = `#else`), salvato in `firmware/src/board_pins.h`:
+- **Display ILI9341** (bus SPI dedicato, nelle -D di platformio.ini):
+  MISO 37, MOSI 35, SCLK 36, CS 17, DC 16, RST 0, TOUCH_CS 18 (no backlight pin).
+- **Bus SPI radio+SD condiviso**: SCK 12, MISO 13, MOSI 11.
+- **microSD**: CS 10.
+- **CC1101**: CS 5, GDO0 6, GDO2 3 (bus 12/13/11).
+- **NRF24 ×3**: CE/CSN = 15/4, 47/48, 14/21. Scanner usa modulo 3 (CE14/CSN21).
+- **IR**: RX 21, TX 14 (⚠️ CONDIVISI col NRF24 mod.3 — uso alternato, ok).
+- **Buzzer**: assente (-1). **Tasti**: su **PCF8574** (I2C, addr auto 0x20-0x27).
+  ⚠️ **I2C SDA/SCL della V2 NON nei sorgenti** (Wire default) → DA CONFERMARE
+  sullo schema prima di usare i tasti reali.
+
+⚠️ **Non testato su hardware** (nessuna scheda): il codice compila ma va
+validato. Il bus SPI display vs radio e i tasti PCF8574 sono i punti da collaudare.
+
+### Da fare (prossima sessione)
+1. **CC1101 sub-GHz** (lib SmartRC/ELECHOUSE già in Libraries del repo CiferTech):
+   modulo RX/RSSI + replay, con `setSpiPin(12,13,11,5)` e GDO 6/3.
+2. **microSD** (CS10, bus 12/13/11): salvataggio catture/log.
+3. **Wardriving** (WiFi continuo + GPS UART → CSV per HORUS).
+4. **Tasti PCF8574** reali (serve confermare SDA/SCL) + **touch** ILI9341 (TOUCH_CS 18).
+5. **BadUSB/HID** (USB nativa S3).
+6. Allineare `diagram.json` Wokwi ai pin display reali (35/36/37/17/16/0) se si
+   vuole simulare col nuovo pinout; tasti sim su GPIO 4/5/6 (NXS_TARGET_SIM=1).
+7. Partition table dedicata 16 MB (app grande + OTA + dati).
+
+### Build / simulazione
+- Compilare: `cd firmware && ~/.local/bin/pio run -e esp32-div-v2`
+- Toolchain in `~/.platformio` (~2,4 GB, cancellabile). Disco al 93%: attenzione.
+
 ## File utili
 - `docs/ui-mockup.html` — il mockup (aprire nel browser o via Artifact).
 - `docs/prossimi-passi.md` — handoff generale + strade firmware A/B.
