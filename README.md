@@ -37,6 +37,23 @@ Menu semplice su schermo, con profili adattati all'hardware:
 - **microSD** (log/handshake/payload) · **GPS** UART (u‑blox NEO‑6M/M8N) per il
   wardriving · **LiPo + carica** per portabilità.
 
+## Ecosistema NexusSec (la "costellazione")
+NexusSec ESP32 è il **gadget hardware** di una famiglia di strumenti che
+condividono brand e filosofia (tutto in casa, minimale, in italiano):
+
+- **[NexusSec OS](https://github.com/RedRider21/NexusSec-OS)** — la distro live
+  di cybersecurity (Alpine + Openbox + pannello Python). Prepara e **flesha
+  l'ESP32** con uno dei profili, e ne **importa i risultati** (wardriving in
+  HORUS, handshake/PMKID nel loot).
+- **[Vesper](https://github.com/RedRider21/vesper)** — l'ambiente desktop
+  Python/GTK estratto da NexusSec.
+- **[Termux-NexusSEC-OS](https://github.com/RedRider21/Termux-NexusSEC-OS)** — la
+  versione Android (Termux + Kali proot + PWA).
+
+La distro **NexusSec OS** sarà in grado di **flashare direttamente l'ESP32** con
+uno dei profili prescelti (Ricognizione / Attacco WiFi / Handshake / Bluetooth /
+BadUSB), via `esptool`, e di raccogliere ciò che il gadget cattura.
+
 ## Note
 - Stack: **Arduino‑ESP32** o **ESP‑IDF** (C/C++).
 - Uso **solo su target autorizzati** (pentest/lab): deauth/rogue AP/BadUSB sono

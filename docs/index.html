@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<!--
+  NexusSec ESP32 — sito di presentazione (GitHub Pages).
+  Bilingue IT/EN (toggle 🌐) e doppio tema chiaro/scuro (toggle), coerente con
+  le pagine di NexusSec OS / Vesper.
+-->
+<html lang="it" data-sitelang="it">
+<head>
+<meta charset="utf-8">
+<title>NexusSec ESP32</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="NexusSec ESP32: gadget hardware di ricognizione wireless (WiFi/BLE/BadUSB) basato su ESP32, corollario dell'ecosistema NexusSec. La distro NexusSec OS lo flesha con un profilo e ne importa i risultati.">
+<!-- Applica lingua e tema salvati PRIMA del render (niente flash) -->
+<script>
+  (function(){
+    try{
+      var l=localStorage.getItem("nx_site_lang");
+      if(!l){ l=(navigator.language||"it").slice(0,2)==="en"?"en":"it"; }
+      document.documentElement.setAttribute("data-sitelang", l);
+      document.documentElement.lang=l;
+      var th=localStorage.getItem("nx_site_theme")||"dark";
+      document.documentElement.setAttribute("data-theme", th);
+    }catch(e){ document.documentElement.setAttribute("data-theme","dark"); }
+  })();
+</script>
+<style>
+:root{
+  --ground:#050a14; --panel:#0a1a26; --panel2:#0d2130; --line:#173247;
+  --ink:#d4f3ff; --dim:#6f97a8; --accent:#00e5ff;
+  --pen:#ff3b5c; --for:#ffb000; --osi:#23d18b; --web:#a06bff;
+  --navbg:rgba(5,10,20,.72); --on-accent:var(--ground); --lead:#a9cdda; --logo:#00e5ff;
+  --mono:ui-monospace,"JetBrains Mono","SFMono-Regular",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+html[data-theme="light"]{
+  --ground:#eef4f8; --panel:#ffffff; --panel2:#e6eff5; --line:#cadeea;
+  --ink:#0a2230; --dim:#4a6b7a; --accent:#0088b3;
+  --pen:#d81f43; --for:#b06a00; --osi:#0f9d63; --web:#7b3fe4;
+  --navbg:rgba(255,255,255,.82); --on-accent:#ffffff; --lead:#39586a; --logo:#07728f;
+}
+[data-sitelang="it"] [data-lang="en"]{display:none!important}
+[data-sitelang="en"] [data-lang="it"]{display:none!important}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);
+  line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+.wrap{max-width:1040px;margin:0 auto;padding:0 24px}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+nav{position:sticky;top:0;z-index:10;backdrop-filter:blur(10px);
+  background:var(--navbg);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;gap:14px;height:58px}
+.brand{font-family:var(--mono);font-weight:700;color:var(--logo);letter-spacing:.02em}
+.brand b{color:var(--ink)}
+.sp{flex:1}
+.tbtn{cursor:pointer;color:var(--accent);background:transparent;
+  border:1px solid var(--line);border-radius:6px;padding:5px 11px;font:inherit;
+  font-size:.85rem}
+.tbtn:hover{border-color:var(--accent)}
+header.hero{padding:72px 0 48px;text-align:center}
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.28em;
+  text-transform:uppercase;color:var(--accent);margin:0 0 16px}
+h1{font-size:clamp(2rem,5vw,3.1rem);margin:.1em 0;line-height:1.1}
+h1 .g{background:linear-gradient(100deg,var(--accent),#8affff);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.lead{color:var(--lead);font-size:1.12rem;max-width:640px;margin:14px auto 0}
+.badge{display:inline-block;margin-top:20px;font-family:var(--mono);font-size:.78rem;
+  color:var(--dim);border:1px solid var(--line);border-radius:20px;padding:5px 14px}
+section{padding:40px 0;border-top:1px solid var(--line)}
+h2{font-size:clamp(1.5rem,3vw,2rem);margin:0 0 8px}
+.sub{color:var(--dim);margin:0 0 24px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.card{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:18px}
+.card b{display:block;margin-bottom:6px}
+.card span{color:var(--dim);font-size:.92rem}
+.card strong{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.chip{border:1px solid var(--line);border-radius:20px;padding:6px 14px;font-size:.9rem;
+  background:var(--panel)}
+.chip .c{font-weight:700}
+ul.plain{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+ul.plain li{display:flex;gap:12px}
+ul.plain .k{color:var(--accent);font-family:var(--mono);flex:none}
+ul.plain span{color:var(--dim)}
+ul.plain b{color:var(--ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.note{border:1px solid var(--line);border-left:3px solid var(--accent);
+  border-radius:8px;background:var(--panel);padding:14px 16px;color:var(--lead);font-size:.95rem}
+.cta{display:inline-block;margin-top:8px;border:1px solid var(--accent);border-radius:6px;
+  padding:10px 20px;background:var(--accent);color:var(--on-accent);font-weight:600}
+.cta.ghost{background:transparent;color:var(--accent)}
+footer{border-top:1px solid var(--line);padding:34px 0;color:var(--dim);font-size:.85rem}
+@media(max-width:820px){.grid,.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav><div class="wrap">
+  <span class="brand">NexusSec<b>·ESP32</b></span>
+  <span class="sp"></span>
+  <button class="tbtn" id="langBtn"><span id="langLbl">EN</span></button>
+  <button class="tbtn" id="themeBtn">🌓</button>
+  <a class="tbtn" href="https://github.com/RedRider21/nexussec-esp32">GitHub</a>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <p class="eyebrow">NexusSec · hardware</p>
+  <h1><span data-lang="it">Il <span class="g">drone di ricognizione</span> wireless</span><span data-lang="en">The wireless <span class="g">recon drone</span></span></h1>
+  <p class="lead">
+    <span data-lang="it">Un gadget <b>ESP32</b> per la ricognizione WiFi/BLE, corollario hardware dell'ecosistema NexusSec. Firmware <b>nostro</b>, brandizzato: la distro <b>NexusSec OS</b> lo flesha con un profilo e ne raccoglie i risultati.</span>
+    <span data-lang="en">An <b>ESP32</b> gadget for WiFi/BLE reconnaissance, the hardware corollary of the NexusSec ecosystem. <b>Our own</b> firmware, branded: the <b>NexusSec OS</b> distro flashes it with a profile and gathers its results.</span>
+  </p>
+  <div class="badge"><span data-lang="it">Stato: scaffold — piano pronto, firmware da sviluppare</span><span data-lang="en">Status: scaffold — plan ready, firmware to be developed</span></div>
+</div></header>
+
+<section><div class="wrap">
+  <h2><span data-lang="it">Cos'è (e cosa non è)</span><span data-lang="en">What it is (and isn't)</span></h2>
+  <p class="sub"><span data-lang="it">L'ESP32 è un microcontrollore: <b>non</b> esegue Linux. Ha però WiFi 2,4 GHz + BLE integrati, ideali per un piccolo esploratore che la distro prepara e da cui riprende i dati.</span><span data-lang="en">The ESP32 is a microcontroller: it does <b>not</b> run Linux. But it has built-in 2.4 GHz WiFi + BLE, ideal for a small scout that the distro prepares and reads back.</span></p>
+  <div class="two">
+    <div class="note"><b data-lang="it">✓ Fa</b><b data-lang="en">✓ Does</b><br>
+      <span data-lang="it">scan WiFi/BLE, sniffer, wardriving, deauth, beacon/probe spam, rogue AP / Evil Portal, cattura PMKID/handshake e — su ESP32‑S2/S3 — BadUSB/HID.</span>
+      <span data-lang="en">WiFi/BLE scan, sniffer, wardriving, deauth, beacon/probe spam, rogue AP / Evil Portal, PMKID/handshake capture and — on ESP32‑S2/S3 — BadUSB/HID.</span></div>
+    <div class="note" style="border-left-color:var(--pen)"><b data-lang="it">✗ Non fa</b><b data-lang="en">✗ Doesn't</b><br>
+      <span data-lang="it">WiFi 5 GHz, sub‑GHz (serve un CC1101), monitor‑mode completo, cracking pesante (quello lo fa il PC).</span>
+      <span data-lang="en">5 GHz WiFi, sub‑GHz (needs a CC1101), full monitor mode, heavy cracking (the PC does that).</span></div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2><span data-lang="it">Profili (menu su schermo)</span><span data-lang="en">Profiles (on-screen menu)</span></h2>
+  <p class="sub"><span data-lang="it">Menu semplice, con profili adattati all'hardware.</span><span data-lang="en">A simple menu, with profiles adapted to the hardware.</span></p>
+  <div class="chips">
+    <div class="chip"><span class="c">📡</span> <span data-lang="it">Ricognizione WiFi</span><span data-lang="en">WiFi recon</span></div>
+    <div class="chip"><span class="c" style="color:var(--pen)">🎯</span> <span data-lang="it">Attacco WiFi (autorizzato)</span><span data-lang="en">WiFi attack (authorized)</span></div>
+    <div class="chip"><span class="c" style="color:var(--for)">🔑</span> <span data-lang="it">Handshake / PMKID</span><span data-lang="en">Handshake / PMKID</span></div>
+    <div class="chip"><span class="c" style="color:var(--osi)">🦷</span> <span data-lang="it">Bluetooth / BLE</span><span data-lang="en">Bluetooth / BLE</span></div>
+    <div class="chip"><span class="c" style="color:var(--web)">⌨️</span> <span data-lang="it">BadUSB (solo S2/S3)</span><span data-lang="en">BadUSB (S2/S3 only)</span></div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2><span data-lang="it">Il collegamento con NexusSec OS</span><span data-lang="en">The link with NexusSec OS</span></h2>
+  <div class="grid">
+    <div class="card"><b data-lang="it">Flash con un click</b><b data-lang="en">One-click flash</b>
+      <span data-lang="it">La distro flesha l'ESP32 con il profilo scelto, via <code>esptool</code> (<code>nxs-esp32</code>).</span>
+      <span data-lang="en">The distro flashes the ESP32 with the chosen profile, via <code>esptool</code> (<code>nxs-esp32</code>).</span></div>
+    <div class="card"><b data-lang="it">Wardriving → HORUS</b><b data-lang="en">Wardriving → HORUS</b>
+      <span data-lang="it">Le reti raccolte finiscono sulla mappa OSINT <strong>HORUS</strong> della distro.</span>
+      <span data-lang="en">Collected networks land on the distro's <strong>HORUS</strong> OSINT map.</span></div>
+    <div class="card"><b data-lang="it">Handshake → loot</b><b data-lang="en">Handshake → loot</b>
+      <span data-lang="it">PMKID/handshake nella cartella <strong>loot</strong>, pronti per i tool di cracking.</span>
+      <span data-lang="en">PMKID/handshake into the <strong>loot</strong> folder, ready for the cracking tools.</span></div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2><span data-lang="it">Hardware consigliato</span><span data-lang="en">Recommended hardware</span></h2>
+  <ul class="plain">
+    <li><span class="k">▸</span><div><b data-lang="it">Board</b><b data-lang="en">Board</b> — <span data-lang="it">ESP32‑S3 con PSRAM (dual‑core, USB nativa per BadUSB, BLE5).</span><span data-lang="en">ESP32‑S3 with PSRAM (dual‑core, native USB for BadUSB, BLE5).</span></div></li>
+    <li><span class="k">▸</span><div><b data-lang="it">Devkit pronti</b><b data-lang="en">Ready devkits</b> — LilyGO T‑Display‑S3, T‑Embed (CC1101 = sub‑GHz), M5Stack Core2 / M5StickC Plus2, CYD.</div></li>
+    <li><span class="k">▸</span><div><b>Display</b> — TFT SPI (ST7789/ILI9341) <span data-lang="it">o</span><span data-lang="en">or</span> OLED SSD1306.</div></li>
+    <li><span class="k">▸</span><div><b>Input</b> — <span data-lang="it">encoder rotativo + tasto, o TFT touch.</span><span data-lang="en">rotary encoder + button, or TFT touch.</span></div></li>
+    <li><span class="k">▸</span><div><b data-lang="it">Extra</b><b data-lang="en">Extras</b> — <span data-lang="it">antenna u.FL 2,4 GHz, microSD (log), GPS UART (wardriving), LiPo + carica.</span><span data-lang="en">u.FL 2.4 GHz antenna, microSD (logs), UART GPS (wardriving), LiPo + charger.</span></div></li>
+  </ul>
+</div></section>
+
+<section><div class="wrap">
+  <h2><span data-lang="it">La costellazione NexusSec</span><span data-lang="en">The NexusSec constellation</span></h2>
+  <div class="grid">
+    <div class="card"><b><a href="https://github.com/RedRider21/NexusSec-OS">NexusSec OS</a></b>
+      <span data-lang="it">La distro live di cybersecurity. Flesha l'ESP32 e ne importa i risultati.</span>
+      <span data-lang="en">The live cybersecurity distro. Flashes the ESP32 and imports its results.</span></div>
+    <div class="card"><b><a href="https://github.com/RedRider21/vesper">Vesper</a></b>
+      <span data-lang="it">L'ambiente desktop Python/GTK estratto da NexusSec.</span>
+      <span data-lang="en">The Python/GTK desktop environment extracted from NexusSec.</span></div>
+    <div class="card"><b><a href="https://github.com/RedRider21/Termux-NexusSEC-OS">Termux‑NexusSEC‑OS</a></b>
+      <span data-lang="it">La versione Android (Termux + Kali proot + PWA).</span>
+      <span data-lang="en">The Android version (Termux + Kali proot + PWA).</span></div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2><span data-lang="it">Uso responsabile</span><span data-lang="en">Responsible use</span></h2>
+  <div class="note" style="border-left-color:var(--for)">
+    <span data-lang="it">deauth, rogue AP, Evil Portal e BadUSB sono tecniche <b>offensive</b>: usale <b>solo</b> su reti e dispositivi di cui hai l'autorizzazione (pentest/laboratorio). Il firmware mostra un avviso all'avvio.</span>
+    <span data-lang="en">deauth, rogue AP, Evil Portal and BadUSB are <b>offensive</b> techniques: use them <b>only</b> on networks and devices you are authorized to test (pentest/lab). The firmware shows a warning at boot.</span>
+  </div>
+  <p style="margin-top:20px">
+    <a class="cta" href="https://github.com/RedRider21/nexussec-esp32">GitHub</a>
+    <a class="cta ghost" href="https://github.com/RedRider21/nexussec-esp32/blob/master/docs/plan.md"><span data-lang="it">Piano di sviluppo</span><span data-lang="en">Development plan</span></a>
+  </p>
+</div></section>
+
+<footer><div class="wrap">
+  <span data-lang="it">NexusSec ESP32 — parte dell'ecosistema NexusSec. Licenza AGPL‑3.0. © 2026 Daniele Deplano (RedRider21).</span>
+  <span data-lang="en">NexusSec ESP32 — part of the NexusSec ecosystem. AGPL‑3.0 license. © 2026 Daniele Deplano (RedRider21).</span>
+</div></footer>
+
+<script>
+(function(){
+  var el=document.documentElement;
+  function setLang(l){el.setAttribute("data-sitelang",l);el.lang=l;
+    try{localStorage.setItem("nx_site_lang",l);}catch(e){}
+    var b=document.getElementById("langLbl"); if(b) b.textContent=(l==="it")?"EN":"IT";}
+  setLang(el.getAttribute("data-sitelang")||"it");
+  document.getElementById("langBtn").addEventListener("click",function(){
+    setLang(el.getAttribute("data-sitelang")==="it"?"en":"it");});
+  document.getElementById("themeBtn").addEventListener("click",function(){
+    var t=el.getAttribute("data-theme")==="light"?"dark":"light";
+    el.setAttribute("data-theme",t);
+    try{localStorage.setItem("nx_site_theme",t);}catch(e){}});
+})();
+</script>
+</body>
+</html>
