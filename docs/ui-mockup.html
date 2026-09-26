@@ -90,6 +90,21 @@
     color:var(--ink-soft); cursor:pointer;
   }
   .chip:hover{border-color:var(--brand); color:var(--brand-ink);}
+  .ctl{display:flex; flex-direction:column; gap:3px;}
+  .ctl label{font-family:"Chakra Petch",sans-serif; font-size:9px; letter-spacing:.6px; text-transform:uppercase; color:var(--ink-faint); padding-left:2px;}
+  .sel-dev{
+    font:inherit; font-size:12px; padding:6px 9px; border-radius:8px;
+    border:1px solid var(--panel-line); background:var(--panel); color:var(--ink); cursor:pointer;
+  }
+  .sel-dev:hover{border-color:var(--brand);}
+  .seg{display:inline-flex; border:1px solid var(--panel-line); border-radius:8px; overflow:hidden; background:var(--panel);}
+  .seg button{
+    font:inherit; font-size:12px; padding:6px 11px; border:none; background:transparent; color:var(--ink-soft); cursor:pointer;
+    display:flex; align-items:center; gap:5px;
+  }
+  .seg button svg{width:14px;height:14px;}
+  .seg button.on{background:color-mix(in srgb, var(--brand) 18%, transparent); color:var(--ink); font-weight:600;}
+  .seg button:not(.on):hover{color:var(--ink);}
 
   /* ---------- Layout ---------- */
   .layout{display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:26px; align-items:start;}
@@ -110,7 +125,11 @@
   .antennae i{display:block; width:8px; height:8px; border-radius:50%; background:#2a343a; border:1px solid #3a464c;}
   .antennae .lbl{font-family:"Chakra Petch"; font-size:9px; letter-spacing:1.5px; color:#5a666c; text-transform:uppercase;}
 
-  .bezel{background:#000; border-radius:10px; padding:9px; box-shadow:inset 0 0 0 1px #2a3439, inset 0 0 18px rgba(0,0,0,.9);}
+  .bezel{background:#000; border-radius:10px; padding:9px; box-shadow:inset 0 0 0 1px #2a3439, inset 0 0 18px rgba(0,0,0,.9); container-type:inline-size;}
+
+  /* orientamento: la larghezza del device cambia per verticale/orizzontale */
+  .device[data-orient="landscape"]{ width:min(94vw, 560px); }
+  .device[data-orient="portrait"]{ width:min(78vw, 360px); }
 
   /* The screen: 320x240 logical, scaled. Base unit = font-size. */
   .screen{
@@ -122,10 +141,13 @@
     overflow:hidden;
     font-family:"Share Tech Mono", ui-monospace, monospace;
     color:var(--scr-txt);
-    font-size:clamp(9px, 2.55vw, 14.5px);
+    font-size:clamp(9px, 2.75cqi, 14.5px);
     line-height:1.35;
     user-select:none;
   }
+  /* aspetto schermo per orientamento (ILI9341 via setRotation) */
+  .device[data-orient="landscape"] .screen{ aspect-ratio:4/3; }
+  .device[data-orient="portrait"]  .screen{ aspect-ratio:3/4; }
   .screen::after{ /* faint scanlines + vignette for TFT realism */
     content:""; position:absolute; inset:0; pointer-events:none;
     background:
@@ -173,6 +195,12 @@
   .tile .t{font-size:.72em; color:var(--scr-txt); letter-spacing:.3px; line-height:1.1;}
   .tile:hover, .tile.sel{border-color:var(--cy); background:var(--sel); box-shadow:0 0 0 1px var(--cy-dim), 0 0 14px -4px var(--cy);}
   .tile:hover svg, .tile.sel svg{filter:drop-shadow(0 0 5px var(--cy));}
+
+  /* --- adattamenti verticale (portrait) --- */
+  .device[data-orient="portrait"] .grid{grid-template-columns:repeat(2,1fr); align-content:start; gap:.45em;}
+  .device[data-orient="portrait"] .tile{padding:.45em .2em;}
+  .device[data-orient="portrait"] .tile svg{width:1.8em;height:1.8em;}
+  .device[data-orient="portrait"] .stats{grid-template-columns:repeat(3,1fr);}
 
   /* generic list rows */
   .rows{display:flex; flex-direction:column; gap:.2em; overflow:hidden;}
@@ -294,16 +322,30 @@
       </div>
     </div>
     <div class="top-actions">
-      <button class="chip" id="themeBtn" type="button">Tema</button>
+      <div class="ctl">
+        <label for="devSel">Dispositivo</label>
+        <select class="sel-dev" id="devSel"></select>
+      </div>
+      <div class="ctl">
+        <label>Orientamento</label>
+        <div class="seg" id="orientSeg">
+          <button type="button" data-o="portrait">Verticale</button>
+          <button type="button" data-o="landscape">Orizzontale</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <label>&nbsp;</label>
+        <button class="chip" id="themeBtn" type="button" style="padding:7px 11px">Tema</button>
+      </div>
     </div>
   </header>
 
   <div class="layout">
     <!-- DEVICE -->
     <div class="stage">
-      <div class="device">
+      <div class="device" id="device" data-orient="portrait">
         <div class="antennae">
-          <i></i><span class="lbl">ESP32-S3 · DIV V2</span><i></i>
+          <i></i><span class="lbl" id="plate">ESP32-S3 · DIV V2</span><i></i>
         </div>
         <div class="bezel">
           <div class="screen" id="screen">
@@ -322,7 +364,7 @@
           <div class="brandplate">NexusSec</div>
         </div>
       </div>
-      <p class="hint">Schermo reale <b>320×240 px</b> (ILI9341 2,8″). I 4 LED RGB WS2812B cambiano colore in base al profilo; rosso = modalità offensiva attiva.</p>
+      <p class="hint" id="hint">Schermo reale <b>240×320 px</b> (ILI9341 2,8″, verticale). I 4 LED RGB WS2812B cambiano colore in base al profilo; rosso = modalità offensiva attiva.</p>
     </div>
 
     <!-- SIDE -->
@@ -337,8 +379,9 @@
       </div>
       <div class="card">
         <h3>Scheda</h3>
-        <div class="specrow"><span class="k">MCU</span><span class="v">ESP32-S3 16MB</span></div>
-        <div class="specrow"><span class="k">Display</span><span class="v">ILI9341 touch</span></div>
+        <div class="specrow"><span class="k">MCU</span><span class="v" id="specMcu">ESP32-S3 16MB</span></div>
+        <div class="specrow"><span class="k">Display</span><span class="v" id="specDisp">ILI9341 2,8″ touch</span></div>
+        <div class="specrow"><span class="k">Risoluzione</span><span class="v" id="specRes">240×320 · verticale</span></div>
         <div class="specrow"><span class="k">Radio</span><span class="v">WiFi·BLE·3×NRF24</span></div>
         <div class="specrow"><span class="k">Sub-GHz</span><span class="v">CC1101</span></div>
         <div class="specrow"><span class="k">Extra</span><span class="v">IR · microSD · IP5306</span></div>
@@ -696,6 +739,67 @@ document.getElementById('themeBtn').addEventListener('click',()=>{
   root.setAttribute('data-theme',next);
 });
 
+/* ============ Dispositivi + orientamento ============ */
+// res = [w,h] nativa (in orizzontale); l'orientamento verticale scambia i due valori.
+const DEVICES = {
+  divv2:   {name:'ESP32-DIV V2 (2,8″)',       mcu:'ESP32-S3 16MB', disp:'ILI9341 2,8″ touch', res:[320,240], defOrient:'portrait',  plate:'ESP32-S3 · DIV V2'},
+  cyd:     {name:'CYD 2432S028R (2,8″)',      mcu:'ESP32',         disp:'ILI9341 2,8″ touch', res:[320,240], defOrient:'landscape', plate:'CYD 2.8″'},
+  m5core2: {name:'M5Stack Core2 (2,0″)',      mcu:'ESP32',         disp:'ILI9341 2,0″ touch', res:[320,240], defOrient:'landscape', plate:'M5 · CORE2'},
+  tdisp:   {name:'LilyGO T-Display-S3 (1,9″)',mcu:'ESP32-S3',      disp:'ST7789 1,9″',        res:[320,170], defOrient:'landscape', plate:'T-DISPLAY-S3'},
+  ssd1306: {name:'OLED SSD1306 (0,96″)',      mcu:'ESP32-S3',      disp:'SSD1306 0,96″',      res:[128,64],  defOrient:'landscape', plate:'OLED 0.96″'},
+  custom:  {name:'Personalizzato',            mcu:'ESP32-S3',      disp:'TFT generico',       res:[320,240], defOrient:'landscape', plate:'CUSTOM'}
+};
+
+const deviceEl = document.getElementById('device');
+const devSel = document.getElementById('devSel');
+const orientSeg = document.getElementById('orientSeg');
+const plateEl = document.getElementById('plate');
+const hintEl = document.getElementById('hint');
+const specMcu = document.getElementById('specMcu');
+const specDisp = document.getElementById('specDisp');
+const specRes = document.getElementById('specRes');
+
+let dev = 'divv2';
+let orient = DEVICES[dev].defOrient;
+
+// popola il select
+Object.keys(DEVICES).forEach(k=>{
+  const o=document.createElement('option'); o.value=k; o.textContent=DEVICES[k].name; devSel.appendChild(o);
+});
+
+function loadPrefs(){
+  try{
+    const d=localStorage.getItem('nxs_dev'); const o=localStorage.getItem('nxs_orient');
+    if(d && DEVICES[d]) dev=d;
+    if(o==='portrait'||o==='landscape') orient=o; else orient=DEVICES[dev].defOrient;
+  }catch(e){ orient=DEVICES[dev].defOrient; }
+}
+function savePrefs(){ try{ localStorage.setItem('nxs_dev',dev); localStorage.setItem('nxs_orient',orient); }catch(e){} }
+
+function resLabel(){
+  const [w,h]=DEVICES[dev].res;
+  const dims = orient==='portrait' ? `${h}×${w}` : `${w}×${h}`;
+  return `${dims} · ${orient==='portrait'?'verticale':'orizzontale'}`;
+}
+
+function applyUI(){
+  const D=DEVICES[dev];
+  deviceEl.setAttribute('data-orient', orient);
+  plateEl.textContent = D.plate;
+  specMcu.textContent = D.mcu;
+  specDisp.textContent = D.disp;
+  specRes.textContent = resLabel();
+  hintEl.innerHTML = `Schermo <b>${resLabel()}</b> (${D.disp}). I 4 LED RGB cambiano colore in base al profilo; rosso = modalità offensiva attiva.`;
+  devSel.value = dev;
+  [...orientSeg.children].forEach(b=>b.classList.toggle('on', b.dataset.o===orient));
+  savePrefs();
+}
+
+devSel.addEventListener('change',()=>{ dev=devSel.value; orient=DEVICES[dev].defOrient; applyUI(); });
+[...orientSeg.children].forEach(b=>b.addEventListener('click',()=>{ orient=b.dataset.o; applyUI(); }));
+
+loadPrefs();
+applyUI();
 go('boot');
 </script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=Share+Tech+Mono&display=swap">
