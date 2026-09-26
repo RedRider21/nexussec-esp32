@@ -24,6 +24,12 @@
 #include <BLEDevice.h>
 #include <BLEScan.h>
 #include <BLEAdvertisedDevice.h>
+#include <SPI.h>
+#include <RF24.h>
+#include <IRrecv.h>
+#include <IRremoteESP8266.h>
+#include <IRutils.h>
+#include "board_pins.h"
 
 #ifndef NXS_FW_VERSION
 #define NXS_FW_VERSION "0.1.0"
@@ -32,9 +38,9 @@
 // ----------------------------------------------------------------------------
 // Tasti fisici (attivi a massa, INPUT_PULLUP). Coincidono col diagram.json Wokwi.
 // ----------------------------------------------------------------------------
-#define BTN_PREV 4
-#define BTN_OK   5
-#define BTN_NEXT 6
+#define BTN_PREV BTN_PREV_PIN
+#define BTN_OK   BTN_OK_PIN
+#define BTN_NEXT BTN_NEXT_PIN
 
 // ----------------------------------------------------------------------------
 // Palette NexusSec (RGB565)
@@ -375,6 +381,117 @@ void moduleBleScan() {
   footerBar("OK ripeti   PREV menu");
 }
 
+// ============================================================================
+// Modulo REALE: analisi spettro 2.4 GHz con NRF24 (pin ESP32-DIV V2)
+// ============================================================================
+static SPIClass radioSPI(HSPI);
+static RF24 nrf(NRF_SCAN_CE, NRF_SCAN_CSN);
+static bool nrfReady = false;
+
+void moduleNrf24Scan() {
+  tft.fillScreen(C_BG);
+  statusBar("NRF24 2.4 GHz");
+  tft.setTextDatum(MC_DATUM);
+  tft.setTextFont(2);
+  tft.setTextColor(C_CY, C_BG);
+  tft.drawString("Analisi 2.4 GHz...", W / 2, H / 2);
+
+  if (!nrfReady) {
+    radioSPI.begin(RADIO_SPI_SCK, RADIO_SPI_MISO, RADIO_SPI_MOSI, NRF_SCAN_CSN);
+    nrfReady = nrf.begin(&radioSPI);
+  }
+
+  const int CH = 64;  // canali 0..63 (2400..2463 MHz)
+  uint8_t vals[CH];
+  memset(vals, 0, sizeof(vals));
+  if (nrfReady) {
+    nrf.setAutoAck(false);
+    nrf.stopListening();
+    for (int rep = 0; rep < 80; rep++) {
+      for (int c = 0; c < CH; c++) {
+        nrf.setChannel(c);
+        nrf.startListening();
+        delayMicroseconds(130);
+        bool sig = nrf.testCarrier();
+        nrf.stopListening();
+        if (sig && vals[c] < 250) vals[c]++;
+      }
+    }
+  }
+
+  tft.fillScreen(C_BG);
+  statusBar("NRF24 2.4 GHz");
+  tft.setTextDatum(ML_DATUM);
+  tft.setTextFont(1);
+  tft.setTextColor(C_MUT, C_BG);
+  tft.drawString(nrfReady ? "Attivita' per canale (0-63)" : "NRF24 non rilevato", 6, SBAR + 10);
+
+  int gx = 6, gy = SBAR + 22, gw = W - 12, gh = H - FBAR - gy - 4;
+  tft.drawRect(gx, gy, gw, gh, C_LINE);
+  int bw = gw / CH; if (bw < 1) bw = 1;
+  uint8_t mx = 1;
+  for (int c = 0; c < CH; c++) if (vals[c] > mx) mx = vals[c];
+  for (int c = 0; c < CH; c++) {
+    int bh = (int)((long)vals[c] * (gh - 2) / mx);
+    tft.fillRect(gx + 1 + c * bw, gy + gh - 1 - bh, bw - 1 > 0 ? bw - 1 : 1, bh, C_CY);
+  }
+  footerBar("OK ripeti   PREV menu");
+}
+
+// ============================================================================
+// Modulo REALE: cattura IR (pin ESP32-DIV V2)
+// ============================================================================
+static IRrecv irrecv(IR_RX_PIN, 1024, 15, true);
+static decode_results irres;
+static bool irReady = false;
+
+void moduleIrCapture() {
+  tft.fillScreen(C_BG);
+  statusBar("INFRAROSSI");
+  tft.setTextDatum(MC_DATUM);
+  tft.setTextFont(2);
+  tft.setTextColor(C_CY, C_BG);
+  tft.drawString("Punta un telecomando", W / 2, H / 2 - 12);
+  tft.setTextColor(C_MUT, C_BG);
+  tft.setTextFont(1);
+  tft.drawString("e premi un tasto (5s)...", W / 2, H / 2 + 10);
+
+  if (!irReady) { irrecv.enableIRIn(); irReady = true; }
+  uint32_t t0 = millis();
+  bool got = false;
+  while (millis() - t0 < 5000) {
+    if (irrecv.decode(&irres)) { got = true; break; }
+    delay(5);
+  }
+
+  tft.fillScreen(C_BG);
+  statusBar("INFRAROSSI");
+  if (got) {
+    tft.setTextDatum(ML_DATUM);
+    tft.setTextFont(2);
+    tft.setTextColor(C_MUT, C_BG);
+    tft.drawString("Protocollo:", 8, SBAR + 22);
+    tft.setTextColor(C_CY, C_BG);
+    tft.drawString(typeToString(irres.decode_type), 8, SBAR + 44);
+    char code[26];
+    snprintf(code, sizeof(code), "0x%llX", (unsigned long long)irres.value);
+    tft.setTextColor(C_MUT, C_BG);
+    tft.drawString("Codice:", 8, SBAR + 74);
+    tft.setTextColor(C_TXT, C_BG);
+    tft.drawString(code, 8, SBAR + 96);
+    char bits[16];
+    snprintf(bits, sizeof(bits), "%d bit", irres.bits);
+    tft.setTextColor(C_MUT, C_BG);
+    tft.drawString(bits, 8, SBAR + 124);
+    irrecv.resume();
+  } else {
+    tft.setTextDatum(MC_DATUM);
+    tft.setTextColor(C_MUT, C_BG);
+    tft.drawString("Nessun segnale", W / 2, H / 2);
+  }
+  footerBar("OK ripeti   PREV menu");
+}
+
 // Schermata segnaposto per i moduli non ancora implementati
 void modulePlaceholder(int id) {
   tft.fillScreen(C_BG);
@@ -411,6 +528,8 @@ void openModule(int id) {
   state = ST_MODULE;
   if (id == P_RECON)         moduleWifiScan();
   else if (id == P_BLE)      moduleBleScan();
+  else if (id == P_NRF24)    moduleNrf24Scan();
+  else if (id == P_IR)       moduleIrCapture();
   else if (id == P_SETTINGS) moduleSettings();
   else                       modulePlaceholder(id);
 }
@@ -461,6 +580,8 @@ void loop() {
       else if (o) {                                   // azione del modulo
         if (curProfile == P_RECON) moduleWifiScan();
         else if (curProfile == P_BLE) moduleBleScan();
+        else if (curProfile == P_NRF24) moduleNrf24Scan();
+        else if (curProfile == P_IR) moduleIrCapture();
         else if (curProfile == P_SETTINGS) {
           rotation = rotation ? 0 : 1;
           prefs.putUChar("rot", rotation);
