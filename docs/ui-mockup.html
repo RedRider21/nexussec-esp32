@@ -148,6 +148,9 @@
   /* aspetto schermo per orientamento (ILI9341 via setRotation) */
   .device[data-orient="landscape"] .screen{ aspect-ratio:4/3; }
   .device[data-orient="portrait"]  .screen{ aspect-ratio:3/4; }
+  /* in verticale lo schermo è più stretto: alzo il font così testo e voci
+     restano leggibili come in orizzontale */
+  .device[data-orient="portrait"]  .screen{ font-size:clamp(11px, 4cqi, 15px); }
   .screen::after{ /* faint scanlines + vignette for TFT realism */
     content:""; position:absolute; inset:0; pointer-events:none;
     background:
