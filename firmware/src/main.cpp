@@ -21,6 +21,9 @@
 #include <TFT_eSPI.h>
 #include <WiFi.h>
 #include <Preferences.h>
+#include <BLEDevice.h>
+#include <BLEScan.h>
+#include <BLEAdvertisedDevice.h>
 
 #ifndef NXS_FW_VERSION
 #define NXS_FW_VERSION "0.1.0"
@@ -317,6 +320,61 @@ void moduleWifiScan() {
   footerBar("OK ripeti   PREV menu");
 }
 
+// ============================================================================
+// Modulo REALE: Scan BLE
+// ============================================================================
+void moduleBleScan() {
+  tft.fillScreen(C_BG);
+  statusBar("BLUETOOTH / BLE");
+  tft.setTextDatum(MC_DATUM);
+  tft.setTextFont(2);
+  tft.setTextColor(C_CY, C_BG);
+  tft.drawString("Scansione BLE...", W / 2, H / 2);
+
+  BLEDevice::init("");
+  BLEScan *s = BLEDevice::getScan();
+  s->setActiveScan(true);
+  s->setInterval(100);
+  s->setWindow(99);
+  BLEScanResults res = s->start(3, false);
+  int n = res.getCount();
+
+  tft.fillScreen(C_BG);
+  statusBar("BLUETOOTH / BLE");
+  char hdr[24];
+  snprintf(hdr, sizeof(hdr), "%d dispositivi BLE", n);
+  tft.setTextDatum(ML_DATUM);
+  tft.setTextFont(2);
+  tft.setTextColor(C_MUT, C_BG);
+  tft.drawString(hdr, 6, SBAR + 12);
+
+  int y = SBAR + 28, rowH = 20, maxRows = (H - FBAR - y) / rowH;
+  for (int i = 0; i < n && i < maxRows; i++) {
+    BLEAdvertisedDevice d = res.getDevice(i);
+    String nm = d.haveName() ? String(d.getName().c_str()) : String(d.getAddress().toString().c_str());
+    if (nm.length() > 16) nm = nm.substring(0, 15) + "~";
+    tft.setTextDatum(ML_DATUM);
+    tft.setTextColor(C_TXT, C_BG);
+    tft.drawString(nm, 6, y + rowH / 2);
+
+    char meta[12];
+    snprintf(meta, sizeof(meta), "%ddBm", d.getRSSI());
+    tft.setTextDatum(MR_DATUM);
+    tft.setTextColor(C_MUT, C_BG);
+    tft.drawString(meta, W - 6, y + rowH / 2);
+
+    tft.drawFastHLine(0, y + rowH - 1, W, C_LINE);
+    y += rowH;
+  }
+  if (n <= 0) {
+    tft.setTextDatum(MC_DATUM);
+    tft.setTextColor(C_MUT, C_BG);
+    tft.drawString("Nessun dispositivo", W / 2, H / 2);
+  }
+  s->clearResults();
+  footerBar("OK ripeti   PREV menu");
+}
+
 // Schermata segnaposto per i moduli non ancora implementati
 void modulePlaceholder(int id) {
   tft.fillScreen(C_BG);
@@ -352,6 +410,7 @@ void openModule(int id) {
   curProfile = id;
   state = ST_MODULE;
   if (id == P_RECON)         moduleWifiScan();
+  else if (id == P_BLE)      moduleBleScan();
   else if (id == P_SETTINGS) moduleSettings();
   else                       modulePlaceholder(id);
 }
@@ -401,6 +460,7 @@ void loop() {
       if (p) { state = ST_HOME; drawHome(); }        // indietro
       else if (o) {                                   // azione del modulo
         if (curProfile == P_RECON) moduleWifiScan();
+        else if (curProfile == P_BLE) moduleBleScan();
         else if (curProfile == P_SETTINGS) {
           rotation = rotation ? 0 : 1;
           prefs.putUChar("rot", rotation);
