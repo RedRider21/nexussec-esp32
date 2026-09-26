@@ -185,7 +185,7 @@
   .fbar .sp{flex:1;}
 
   /* home grid */
-  .grid{display:grid; grid-template-columns:repeat(5,1fr); gap:.5em; height:100%; align-content:center;}
+  .grid{display:grid; grid-template-columns:repeat(5,1fr); grid-auto-rows:1fr; gap:.5em; flex:1; min-height:0;}
   .tile{
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.35em;
     padding:.5em .2em; border:1px solid var(--scr-line); border-radius:.35em;
@@ -197,7 +197,7 @@
   .tile:hover svg, .tile.sel svg{filter:drop-shadow(0 0 5px var(--cy));}
 
   /* --- adattamenti verticale (portrait) --- */
-  .device[data-orient="portrait"] .grid{grid-template-columns:repeat(2,1fr); align-content:start; gap:.45em;}
+  .device[data-orient="portrait"] .grid{grid-template-columns:repeat(2,1fr); gap:.45em;}
   .device[data-orient="portrait"] .tile{padding:.45em .2em;}
   .device[data-orient="portrait"] .tile svg{width:1.8em;height:1.8em;}
   .device[data-orient="portrait"] .stats{grid-template-columns:repeat(3,1fr);}
@@ -715,6 +715,7 @@ function go(k){
   scr.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
   aboutTtl.textContent = NAVNAME[k];
   aboutEl.innerHTML = S.about||'';
+  try{ history.replaceState(null,'', ORDER.includes(k)?('#'+k):location.pathname); }catch(e){}
 }
 
 document.getElementById('btnBack').addEventListener('click',()=>go(current==='home'||current==='boot'?'boot':'home'));
@@ -800,6 +801,7 @@ devSel.addEventListener('change',()=>{ dev=devSel.value; orient=DEVICES[dev].def
 
 loadPrefs();
 applyUI();
-go('boot');
+const startHash=(location.hash||'').replace('#','');
+go(SCREENS[startHash]?startHash:'boot');
 </script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=Share+Tech+Mono&display=swap">
