@@ -58,6 +58,23 @@ Apri una sessione in questa cartella e parti da qui.
    specifica delle schermate (menu a profili, avviso legale, layout status bar).
 5. Lato distro: tool **`nxs-esp32`** (flash esptool + import HORUS/loot).
 
+## Aggiornamento 2026-09-27 — logo + firmware avviato
+- **Logo/brand DEFINITIVO**: emblema-chip NexusSec ESP32 (esagono + "N" a nodi
+  derivati dal logo NexusSec OS `splash/emblem.png`, resi come **chip**: piedini
+  su tutti i lati + segnale WiFi). Applicato a: mockup (header+boot, sorgente
+  unica `EMBLEM_ESP`), sito Pages (nav + hero con **due anelli di puntini
+  contro-rotanti**, chip piccolo/raffinato scale 0.72). Accent brand `#00e5ff`.
+- **Sito Pages AGGIORNATO e PUSHATO** su `master` (Pages da /docs).
+- **Firmware avviato (Strada B, Arduino-ESP32 + TFT_eSPI, PlatformIO)** in
+  `firmware/`: boot+avviso legale, menu profili con **doppio orientamento**
+  (NVS), **scan WiFi reale**; file **Wokwi** per provarlo nel browser senza
+  scheda. Vedi `firmware/README.md`.
+  - ⚠️ **NON ancora compilato/verificato** in questa sessione (qui manca
+    PlatformIO/arduino-cli; c'è solo python3). Da fare: `pio run` o simulare in
+    Wokwi. Trattare il codice come da collaudare.
+- Doppio orientamento nel mockup: default **verticale** per ESP32-DIV V2;
+  font più grande in verticale nelle sotto-schermate; griglia menu a pieno schermo.
+
 ## File utili
 - `docs/ui-mockup.html` — il mockup (aprire nel browser o via Artifact).
 - `docs/prossimi-passi.md` — handoff generale + strade firmware A/B.
