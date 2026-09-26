@@ -2,7 +2,9 @@
 
 Firmware **nostro** (Opzione B) per gadget **ESP32**, corollario di NexusSec OS
 (`../NexusSec-OS/`). Progetto autonomo ma pensato per **integrarsi** con la distro
-(flash + import dei risultati in HORUS/loot).
+(flash + import dei risultati in HORUS/loot). DUE STRADE possibili per il
+firmware (vedi `docs/prossimi-passi.md`): A) firmware ESP32-DIV esistente (MIT),
+B) firmware nostro. Decisione aperta.
 
 ## Lingua e stile
 - Contenuti user-visible (menu su schermo, README, log) e commenti in **italiano**
@@ -10,6 +12,9 @@ Firmware **nostro** (Opzione B) per gadget **ESP32**, corollario di NexusSec OS
 - UI minimale/flat, accent **cyan** su fondo scuro (coerente col brand NexusSec).
 
 ## Hardware di riferimento
+- **Scheda scelta: ESP32-DIV V2** (CiferTech, open-source MIT) — multi-tool con
+  ESP32-S3 16MB, touch ILI9341 2,8", WiFi/BLE, 3× NRF24 (2,4 GHz), CC1101
+  (sub-GHz), IR, microSD, batteria IP5306. Vedi `docs/prossimi-passi.md`.
 - **ESP32‑S3** con PSRAM (dual‑core, **USB nativa** → BadUSB/HID; BLE5).
 - Display TFT (ST7789/ILI9341) o OLED (SSD1306); input encoder/tasti o touch.
 - Opzionali: microSD (log), GPS UART (wardriving), antenna esterna u.FL, LiPo.

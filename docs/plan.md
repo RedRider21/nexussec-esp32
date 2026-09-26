@@ -1,5 +1,9 @@
 # NexusSec ESP32 — piano di lavoro
 
+> ⚠️ Aggiornato: la scheda scelta è la **ESP32-DIV V2** (con NRF24/CC1101/IR).
+> Per l'avvio della prossima sessione usa **`docs/prossimi-passi.md`** (questo
+> file resta come storico del piano iniziale).
+
 Handoff per la sessione dedicata. Decisione utente (2026-09-14): **Opzione B**
 (firmware nostro), progetto a parte **collegato** a NexusSec.
 
