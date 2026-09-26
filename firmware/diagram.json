@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "author": "NexusSec",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-s3-devkitc-1", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-ili9341", "id": "lcd", "top": -120, "left": 200,
+      "attrs": { "rotation": "0" } },
+    { "type": "wokwi-pushbutton", "id": "bPrev", "top": 180, "left": -160,
+      "attrs": { "color": "green", "label": "PREV" } },
+    { "type": "wokwi-pushbutton", "id": "bOk", "top": 180, "left": -60,
+      "attrs": { "color": "cyan", "label": "OK" } },
+    { "type": "wokwi-pushbutton", "id": "bNext", "top": 180, "left": 40,
+      "attrs": { "color": "green", "label": "NEXT" } }
+  ],
+  "connections": [
+    [ "esp:3V3", "lcd:VCC", "red", [] ],
+    [ "esp:GND.1", "lcd:GND", "black", [] ],
+    [ "esp:3V3", "lcd:LED", "red", [] ],
+    [ "esp:10", "lcd:CS", "orange", [] ],
+    [ "esp:14", "lcd:RST", "yellow", [] ],
+    [ "esp:13", "lcd:D/C", "green", [] ],
+    [ "esp:11", "lcd:SDI", "blue", [] ],
+    [ "esp:12", "lcd:SCK", "purple", [] ],
+    [ "esp:9", "lcd:SDO", "cyan", [] ],
+
+    [ "esp:4", "bPrev:1.l", "green", [] ],
+    [ "bPrev:2.l", "esp:GND.2", "black", [] ],
+    [ "esp:5", "bOk:1.l", "cyan", [] ],
+    [ "bOk:2.l", "esp:GND.2", "black", [] ],
+    [ "esp:6", "bNext:1.l", "green", [] ],
+    [ "bNext:2.l", "esp:GND.2", "black", [] ]
+  ],
+  "dependencies": {}
+}

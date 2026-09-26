@@ -1,0 +1,9 @@
+# Simulatore Wokwi per il firmware NexusSec ESP32.
+# Uso (VS Code + estensione Wokwi):
+#   1) PlatformIO: "Build" dell'ambiente esp32-div-v2
+#   2) apri diagram.json e premi "Play" (l'estensione Wokwi legge questo file)
+# Oppure carica firmware/ su https://wokwi.com (progetto PlatformIO).
+[wokwi]
+version = 1
+firmware = ".pio/build/esp32-div-v2/firmware.bin"
+elf = ".pio/build/esp32-div-v2/firmware.elf"
