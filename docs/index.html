@@ -9,6 +9,7 @@
 <meta charset="utf-8">
 <title>NexusSec ESP32</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 200 220%27%3E%3Cpolygon points=%27100,10 180,55 180,145 100,190 20,145 20,55%27 fill=%27none%27 stroke=%27%2300e5ff%27 stroke-width=%2714%27/%3E%3Ctext x=%27100%27 y=%27132%27 text-anchor=%27middle%27 font-family=%27monospace%27 font-size=%2790%27 font-weight=%27700%27 fill=%27%2300e5ff%27%3EN%3C/text%3E%3C/svg%3E">
 <meta name="description" content="NexusSec ESP32: gadget hardware di ricognizione wireless (WiFi/BLE/BadUSB) basato su ESP32, corollario dell'ecosistema NexusSec. La distro NexusSec OS lo flesha con un profilo e ne importa i risultati.">
 <!-- Applica lingua e tema salvati PRIMA del render (niente flash) -->
 <script>
@@ -50,7 +51,17 @@ a:hover{text-decoration:underline}
 nav{position:sticky;top:0;z-index:10;backdrop-filter:blur(10px);
   background:var(--navbg);border-bottom:1px solid var(--line)}
 nav .wrap{display:flex;align-items:center;gap:14px;height:58px}
-.brand{font-family:var(--mono);font-weight:700;color:var(--logo);letter-spacing:.02em}
+.brand{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-weight:700;color:var(--logo);letter-spacing:.02em}
+.brand svg{width:24px;height:26px;flex:none}
+.brand svg polygon{stroke:var(--logo)}
+.brand svg text{fill:var(--logo)}
+.emblem{display:grid;place-items:center;margin:0 auto 22px;width:132px;height:132px}
+.emblem svg{width:100%;height:100%}
+.emblem svg g{stroke:var(--logo)}
+.emblem svg text{fill:var(--logo)}
+.emblem .ring{transform-origin:center;animation:spin 40s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.emblem .ring{animation:none}}
 .brand b{color:var(--ink)}
 .sp{flex:1}
 .tbtn{cursor:pointer;color:var(--accent);background:transparent;
@@ -95,7 +106,7 @@ footer{border-top:1px solid var(--line);padding:34px 0;color:var(--dim);font-siz
 </head>
 <body>
 <nav><div class="wrap">
-  <span class="brand">NexusSec<b>·ESP32</b></span>
+  <span class="brand"><svg viewBox="0 0 200 220" aria-hidden="true"><polygon points="100,10 180,55 180,145 100,190 20,145 20,55" fill="none" stroke="#00e5ff" stroke-width="12"/><text x="100" y="132" text-anchor="middle" font-family="ui-monospace,monospace" font-size="86" font-weight="700" fill="#00e5ff">N</text></svg>NexusSec<b>·ESP32</b></span>
   <span class="sp"></span>
   <button class="tbtn" id="langBtn"><span id="langLbl">EN</span></button>
   <button class="tbtn" id="themeBtn">🌓</button>
@@ -103,25 +114,33 @@ footer{border-top:1px solid var(--line);padding:34px 0;color:var(--dim);font-siz
 </div></nav>
 
 <header class="hero"><div class="wrap">
+<div class="emblem"><svg viewBox="0 0 200 200" role="img" aria-label="Logo NexusSec ESP32">
+    <g fill="none" stroke="#00e5ff">
+      <g class="ring" stroke-opacity=".30" stroke-dasharray="4 8"><circle cx="100" cy="100" r="92" stroke-width="1.5"/></g>
+      <polygon points="100,26 164,63 164,137 100,174 36,137 36,63" stroke-width="3" stroke-opacity=".95"/>
+      <polygon points="100,54 140,77 140,123 100,146 60,123 60,77" stroke-width="1.6" stroke-opacity=".55"/>
+    </g>
+    <text x="100" y="118" text-anchor="middle" font-family="ui-monospace,monospace" font-size="46" font-weight="700" fill="#8affff">N</text>
+  </svg></div>
   <p class="eyebrow">NexusSec · hardware</p>
   <h1><span data-lang="it">Il <span class="g">drone di ricognizione</span> wireless</span><span data-lang="en">The wireless <span class="g">recon drone</span></span></h1>
   <p class="lead">
-    <span data-lang="it">Un gadget <b>ESP32</b> per la ricognizione WiFi/BLE, corollario hardware dell'ecosistema NexusSec. Firmware <b>nostro</b>, brandizzato: la distro <b>NexusSec OS</b> lo flesha con un profilo e ne raccoglie i risultati.</span>
-    <span data-lang="en">An <b>ESP32</b> gadget for WiFi/BLE reconnaissance, the hardware corollary of the NexusSec ecosystem. <b>Our own</b> firmware, branded: the <b>NexusSec OS</b> distro flashes it with a profile and gathers its results.</span>
+    <span data-lang="it">Un multi-tool wireless in stile Flipper basato su <b>ESP32-DIV V2</b>: WiFi/BLE, 2,4 GHz (NRF24), sub-GHz (CC1101) e infrarossi in un solo gadget. È il corollario hardware di NexusSec: la distro <b>NexusSec OS</b> lo flesha con un profilo e ne raccoglie i risultati.</span>
+    <span data-lang="en">A Flipper-style wireless multi-tool based on <b>ESP32-DIV V2</b>: WiFi/BLE, 2.4 GHz (NRF24), sub-GHz (CC1101) and infrared in one gadget. The hardware corollary of NexusSec: the <b>NexusSec OS</b> distro flashes it with a profile and gathers its results.</span>
   </p>
   <div class="badge"><span data-lang="it">Stato: scaffold — piano pronto, firmware da sviluppare</span><span data-lang="en">Status: scaffold — plan ready, firmware to be developed</span></div>
 </div></header>
 
 <section><div class="wrap">
   <h2><span data-lang="it">Cos'è (e cosa non è)</span><span data-lang="en">What it is (and isn't)</span></h2>
-  <p class="sub"><span data-lang="it">L'ESP32 è un microcontrollore: <b>non</b> esegue Linux. Ha però WiFi 2,4 GHz + BLE integrati, ideali per un piccolo esploratore che la distro prepara e da cui riprende i dati.</span><span data-lang="en">The ESP32 is a microcontroller: it does <b>not</b> run Linux. But it has built-in 2.4 GHz WiFi + BLE, ideal for a small scout that the distro prepares and reads back.</span></p>
+  <p class="sub"><span data-lang="it">La ESP32-DIV è un microcontrollore (ESP32-S3): <b>non</b> esegue Linux, ma unisce più radio in un solo dispositivo tascabile che la distro prepara e da cui riprende i dati.</span><span data-lang="en">The ESP32-DIV is a microcontroller (ESP32-S3): it does <b>not</b> run Linux, but it combines several radios in one pocket device that the distro prepares and reads back.</span></p>
   <div class="two">
     <div class="note"><b data-lang="it">✓ Fa</b><b data-lang="en">✓ Does</b><br>
-      <span data-lang="it">scan WiFi/BLE, sniffer, wardriving, deauth, beacon/probe spam, rogue AP / Evil Portal, cattura PMKID/handshake e — su ESP32‑S2/S3 — BadUSB/HID.</span>
-      <span data-lang="en">WiFi/BLE scan, sniffer, wardriving, deauth, beacon/probe spam, rogue AP / Evil Portal, PMKID/handshake capture and — on ESP32‑S2/S3 — BadUSB/HID.</span></div>
+      <span data-lang="it">WiFi: scan, sniffer, wardriving, deauth, beacon/probe spam, rogue AP / Evil Portal, PMKID/handshake. BLE: scan/spam. 2,4 GHz (NRF24): analisi e disturbo di canale. Sub-GHz (CC1101): cattura e replay di telecomandi (433/315/868/915 MHz). Infrarossi: cattura e replay. BadUSB/HID (ESP32-S3).</span>
+      <span data-lang="en">WiFi: scan, sniffer, wardriving, deauth, beacon/probe spam, rogue AP / Evil Portal, PMKID/handshake. BLE: scan/spam. 2.4 GHz (NRF24): channel analysis and jamming. Sub-GHz (CC1101): capture and replay of remotes (433/315/868/915 MHz). Infrared: capture and replay. BadUSB/HID (ESP32-S3).</span></div>
     <div class="note" style="border-left-color:var(--pen)"><b data-lang="it">✗ Non fa</b><b data-lang="en">✗ Doesn't</b><br>
-      <span data-lang="it">WiFi 5 GHz, sub‑GHz (serve un CC1101), monitor‑mode completo, cracking pesante (quello lo fa il PC).</span>
-      <span data-lang="en">5 GHz WiFi, sub‑GHz (needs a CC1101), full monitor mode, heavy cracking (the PC does that).</span></div>
+      <span data-lang="it">WiFi 5 GHz, monitor‑mode completo come una scheda vera, cracking pesante (quello lo fa il PC con i dati raccolti).</span>
+      <span data-lang="en">5 GHz WiFi, full monitor mode like a real card, heavy cracking (the PC does that with the collected data).</span></div>
   </div>
 </div></section>
 
@@ -133,7 +152,10 @@ footer{border-top:1px solid var(--line);padding:34px 0;color:var(--dim);font-siz
     <div class="chip"><span class="c" style="color:var(--pen)">🎯</span> <span data-lang="it">Attacco WiFi (autorizzato)</span><span data-lang="en">WiFi attack (authorized)</span></div>
     <div class="chip"><span class="c" style="color:var(--for)">🔑</span> <span data-lang="it">Handshake / PMKID</span><span data-lang="en">Handshake / PMKID</span></div>
     <div class="chip"><span class="c" style="color:var(--osi)">🦷</span> <span data-lang="it">Bluetooth / BLE</span><span data-lang="en">Bluetooth / BLE</span></div>
-    <div class="chip"><span class="c" style="color:var(--web)">⌨️</span> <span data-lang="it">BadUSB (solo S2/S3)</span><span data-lang="en">BadUSB (S2/S3 only)</span></div>
+    <div class="chip"><span class="c" style="color:var(--osi)">📶</span> <span data-lang="it">2,4 GHz (NRF24)</span><span data-lang="en">2.4 GHz (NRF24)</span></div>
+    <div class="chip"><span class="c" style="color:var(--for)">📻</span> <span data-lang="it">Sub-GHz (CC1101)</span><span data-lang="en">Sub-GHz (CC1101)</span></div>
+    <div class="chip"><span class="c" style="color:var(--for)">🔴</span> <span data-lang="it">Infrarossi</span><span data-lang="en">Infrared</span></div>
+    <div class="chip"><span class="c" style="color:var(--web)">⌨️</span> <span data-lang="it">BadUSB (S3)</span><span data-lang="en">BadUSB (S3)</span></div>
   </div>
 </div></section>
 
@@ -153,14 +175,27 @@ footer{border-top:1px solid var(--line);padding:34px 0;color:var(--dim);font-siz
 </div></section>
 
 <section><div class="wrap">
-  <h2><span data-lang="it">Hardware consigliato</span><span data-lang="en">Recommended hardware</span></h2>
+  <h2><span data-lang="it">La scheda di riferimento: ESP32-DIV V2</span><span data-lang="en">Reference board: ESP32-DIV V2</span></h2>
+  <p class="sub"><span data-lang="it">Multi-tool open-source di <a href="https://github.com/cifertech/ESP32-DIV">CiferTech</a> (licenza MIT). Più radio in una scheda tascabile.</span><span data-lang="en">Open-source multi-tool by <a href="https://github.com/cifertech/ESP32-DIV">CiferTech</a> (MIT license). Several radios in one pocket board.</span></p>
   <ul class="plain">
-    <li><span class="k">▸</span><div><b data-lang="it">Board</b><b data-lang="en">Board</b> — <span data-lang="it">ESP32‑S3 con PSRAM (dual‑core, USB nativa per BadUSB, BLE5).</span><span data-lang="en">ESP32‑S3 with PSRAM (dual‑core, native USB for BadUSB, BLE5).</span></div></li>
-    <li><span class="k">▸</span><div><b data-lang="it">Devkit pronti</b><b data-lang="en">Ready devkits</b> — LilyGO T‑Display‑S3, T‑Embed (CC1101 = sub‑GHz), M5Stack Core2 / M5StickC Plus2, CYD.</div></li>
-    <li><span class="k">▸</span><div><b>Display</b> — TFT SPI (ST7789/ILI9341) <span data-lang="it">o</span><span data-lang="en">or</span> OLED SSD1306.</div></li>
-    <li><span class="k">▸</span><div><b>Input</b> — <span data-lang="it">encoder rotativo + tasto, o TFT touch.</span><span data-lang="en">rotary encoder + button, or TFT touch.</span></div></li>
-    <li><span class="k">▸</span><div><b data-lang="it">Extra</b><b data-lang="en">Extras</b> — <span data-lang="it">antenna u.FL 2,4 GHz, microSD (log), GPS UART (wardriving), LiPo + carica.</span><span data-lang="en">u.FL 2.4 GHz antenna, microSD (logs), UART GPS (wardriving), LiPo + charger.</span></div></li>
+    <li><span class="k">▸</span><div><b>MCU</b> — <span data-lang="it">ESP32-S3, 16 MB flash (dual-core, USB nativa → BadUSB, BLE5).</span><span data-lang="en">ESP32-S3, 16 MB flash (dual-core, native USB → BadUSB, BLE5).</span></div></li>
+    <li><span class="k">▸</span><div><b data-lang="it">Radio</b><b data-lang="en">Radios</b> — <span data-lang="it">WiFi + BLE, 3× NRF24L01 (2,4 GHz), CC1101 (sub-GHz), ricetrasmettitore infrarossi.</span><span data-lang="en">WiFi + BLE, 3× NRF24L01 (2.4 GHz), CC1101 (sub-GHz), infrared transceiver.</span></div></li>
+    <li><span class="k">▸</span><div><b data-lang="it">Schermo e input</b><b data-lang="en">Screen & input</b> — <span data-lang="it">touch TFT ILI9341 2,8", tasti fisici, 4 LED RGB WS2812B + buzzer.</span><span data-lang="en">2.8" ILI9341 TFT touch, physical buttons, 4× WS2812B RGB LEDs + buzzer.</span></div></li>
+    <li><span class="k">▸</span><div><b data-lang="it">Resto</b><b data-lang="en">Rest</b> — <span data-lang="it">slot microSD, USB-C, connettori antenna SMA, gestione batteria IP5306, header a pogo-pin (impilabile).</span><span data-lang="en">microSD slot, USB-C, SMA antenna connectors, IP5306 battery management, pogo-pin headers (stackable).</span></div></li>
   </ul>
+</div></section>
+
+<section><div class="wrap">
+  <h2><span data-lang="it">Due strade per il firmware</span><span data-lang="en">Two firmware paths</span></h2>
+  <p class="sub"><span data-lang="it">La scheda si può usare in due modi; entrambi restano integrati con la distro.</span><span data-lang="en">The board can be used in two ways; both stay integrated with the distro.</span></p>
+  <div class="two">
+    <div class="card"><b data-lang="it">A · Firmware ESP32-DIV (esistente)</b><b data-lang="en">A · ESP32-DIV firmware (existing)</b>
+      <span data-lang="it"><strong>Pro:</strong> pronto e completo, community attiva, tutte le funzioni della scheda subito. <strong>Contro:</strong> non brandizzato NexusSec, l'integrazione con distro/HORUS va adattata sopra.</span>
+      <span data-lang="en"><strong>Pros:</strong> ready and complete, active community, all board features right away. <strong>Cons:</strong> not NexusSec-branded, integration with distro/HORUS must be adapted on top.</span></div>
+    <div class="card"><b data-lang="it">B · Firmware NexusSec (nostro)</b><b data-lang="en">B · NexusSec firmware (our own)</b>
+      <span data-lang="it"><strong>Pro:</strong> tutto in casa, menu a profili in stile NexusSec, output pensato per l'import diretto (HORUS/loot), niente dipendenze da terzi. <strong>Contro:</strong> da sviluppare, più lavoro e manutenzione.</span>
+      <span data-lang="en"><strong>Pros:</strong> all in-house, NexusSec-style profile menu, output designed for direct import (HORUS/loot), no third-party dependency. <strong>Cons:</strong> to be developed, more work and maintenance.</span></div>
+  </div>
 </div></section>
 
 <section><div class="wrap">

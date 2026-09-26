@@ -1,5 +1,7 @@
 # NexusSec ESP32
 
+**Sito**: https://redrider21.github.io/nexussec-esp32/ · parte dell'ecosistema NexusSec.
+
 Gadget hardware di **ricognizione wireless** basato su **ESP32**, **corollario**
 dell'ecosistema **NexusSec** (distro NexusSec OS + app Android Termux-NexusSEC-OS
 + DE Vesper). Progetto **a sé ma collegato**: firmware **nostro** (non adottiamo
