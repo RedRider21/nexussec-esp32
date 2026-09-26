@@ -197,9 +197,10 @@
   .tile:hover svg, .tile.sel svg{filter:drop-shadow(0 0 5px var(--cy));}
 
   /* --- adattamenti verticale (portrait) --- */
-  .device[data-orient="portrait"] .grid{grid-template-columns:repeat(2,1fr); gap:.45em;}
-  .device[data-orient="portrait"] .tile{padding:.45em .2em;}
-  .device[data-orient="portrait"] .tile svg{width:1.8em;height:1.8em;}
+  .device[data-orient="portrait"] .grid{grid-template-columns:repeat(2,1fr); gap:.5em;}
+  .device[data-orient="portrait"] .tile{padding:.5em .2em; gap:.5em;}
+  .device[data-orient="portrait"] .tile svg{width:2.6em;height:2.6em;}
+  .device[data-orient="portrait"] .tile .t{font-size:.95em;}
   .device[data-orient="portrait"] .stats{grid-template-columns:repeat(3,1fr);}
 
   /* generic list rows */
