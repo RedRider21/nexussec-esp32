@@ -2,3 +2,5 @@ build/
 *.bin
 __pycache__/
 .DS_Store
+# eccezioni: firmware "deliverable" da versionare
+!firmware/vendor/*.bin
