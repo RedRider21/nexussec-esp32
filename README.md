@@ -46,6 +46,20 @@ Recon WiFi · Wardriving (→CSV/HORUS) · Attacco WiFi* · Handshake/PMKID* · 
 NRF24 (spettro 2,4 GHz) · Sub-GHz CC1101 · Infrarossi · BadUSB/HID · Loot/microSD ·
 Impostazioni. **Doppio orientamento** (verticale/orizzontale) salvato in NVS.
 
+## Interfaccia (screenshot)
+Schermate del firmware sul display 320×240 (verticale), UI flat con accent cyan.
+
+<p>
+  <img src="docs/img/shot-home.png"       alt="Menu profili"   width="150">
+  <img src="docs/img/shot-wifi_recon.png" alt="Recon WiFi"     width="150">
+  <img src="docs/img/shot-wardriving.png" alt="Wardriving"     width="150">
+  <img src="docs/img/shot-subghz.png"     alt="Sub-GHz CC1101" width="150">
+  <img src="docs/img/shot-badusb.png"     alt="BadUSB / HID"   width="150">
+</p>
+
+_Menu profili · Recon WiFi · Wardriving · Sub-GHz CC1101 · BadUSB._ Anteprima
+interattiva: [`docs/ui-mockup.html`](docs/ui-mockup.html).
+
 ## Compilare
 Serve **PlatformIO** (`pip install platformio`).
 ```bash
