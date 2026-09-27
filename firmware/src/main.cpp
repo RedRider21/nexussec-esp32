@@ -30,6 +30,8 @@
 #include <IRremoteESP8266.h>
 #include <IRutils.h>
 #include <ELECHOUSE_CC1101_SRC_DRV.h>
+#include <FS.h>
+#include <SD.h>
 #include "board_pins.h"
 
 #ifndef NXS_FW_VERSION
@@ -60,6 +62,25 @@ static const uint16_t C_SEL   = RGB(13, 43, 49);
 
 TFT_eSPI tft = TFT_eSPI();
 Preferences prefs;
+
+// Bus SPI condiviso da radio (NRF24/CC1101) e microSD (pin 12/13/11).
+static SPIClass radioSPI(HSPI);
+static bool radioSpiBegun = false;
+static bool sdMounted = false;
+
+static void ensureRadioSpi() {
+  if (!radioSpiBegun) {
+    radioSPI.begin(RADIO_SPI_SCK, RADIO_SPI_MISO, RADIO_SPI_MOSI, -1);
+    radioSpiBegun = true;
+  }
+}
+// Monta la microSD (bus radio, CS10). Idempotente.
+static bool sdInit() {
+  if (sdMounted) return true;
+  ensureRadioSpi();
+  sdMounted = SD.begin(SD_CS_PIN, radioSPI);
+  return sdMounted;
+}
 
 // ----------------------------------------------------------------------------
 // Profili del menu
@@ -385,7 +406,6 @@ void moduleBleScan() {
 // ============================================================================
 // Modulo REALE: analisi spettro 2.4 GHz con NRF24 (pin ESP32-DIV V2)
 // ============================================================================
-static SPIClass radioSPI(HSPI);
 static RF24 nrf(NRF_SCAN_CE, NRF_SCAN_CSN);
 static bool nrfReady = false;
 
@@ -398,7 +418,7 @@ void moduleNrf24Scan() {
   tft.drawString("Analisi 2.4 GHz...", W / 2, H / 2);
 
   if (!nrfReady) {
-    radioSPI.begin(RADIO_SPI_SCK, RADIO_SPI_MISO, RADIO_SPI_MOSI, NRF_SCAN_CSN);
+    ensureRadioSpi();
     nrfReady = nrf.begin(&radioSPI);
   }
 
@@ -543,6 +563,60 @@ void moduleSubghz() {
   footerBar("OK ripeti   PREV menu");
 }
 
+// ============================================================================
+// Modulo REALE: Loot / microSD (info scheda + lista file)
+// ============================================================================
+void moduleLoot() {
+  tft.fillScreen(C_BG);
+  statusBar("LOOT / microSD");
+  if (!sdInit()) {
+    tft.setTextDatum(MC_DATUM);
+    tft.setTextFont(2);
+    tft.setTextColor(C_CRIT, C_BG);
+    tft.drawString("microSD non rilevata", W / 2, H / 2);
+    footerBar("OK riprova   PREV menu");
+    return;
+  }
+  uint64_t cardMB = SD.cardSize() / (1024ULL * 1024ULL);
+  uint64_t usedMB = SD.usedBytes() / (1024ULL * 1024ULL);
+  char hdr[36];
+  snprintf(hdr, sizeof(hdr), "SD %lluMB - usati %lluMB",
+           (unsigned long long)cardMB, (unsigned long long)usedMB);
+  tft.setTextDatum(ML_DATUM);
+  tft.setTextFont(1);
+  tft.setTextColor(C_MUT, C_BG);
+  tft.drawString(hdr, 6, SBAR + 10);
+
+  File root = SD.open("/");
+  int y = SBAR + 24, rowH = 18, maxRows = (H - FBAR - y) / rowH, cnt = 0;
+  if (root) {
+    File f = root.openNextFile();
+    while (f && cnt < maxRows) {
+      String nm = String(f.name());
+      if (nm.length() > 18) nm = nm.substring(0, 17) + "~";
+      tft.setTextDatum(ML_DATUM);
+      tft.setTextFont(2);
+      tft.setTextColor(f.isDirectory() ? C_CY : C_TXT, C_BG);
+      tft.drawString((f.isDirectory() ? "/" : " ") + nm, 6, y + rowH / 2);
+      if (!f.isDirectory()) {
+        char sz[14];
+        snprintf(sz, sizeof(sz), "%uB", (unsigned)f.size());
+        tft.setTextDatum(MR_DATUM);
+        tft.setTextColor(C_MUT, C_BG);
+        tft.drawString(sz, W - 6, y + rowH / 2);
+      }
+      y += rowH; cnt++;
+      f = root.openNextFile();
+    }
+  }
+  if (cnt == 0) {
+    tft.setTextDatum(MC_DATUM);
+    tft.setTextColor(C_MUT, C_BG);
+    tft.drawString("(vuota)", W / 2, H / 2);
+  }
+  footerBar("OK aggiorna   PREV menu");
+}
+
 // Schermata segnaposto per i moduli non ancora implementati
 void modulePlaceholder(int id) {
   tft.fillScreen(C_BG);
@@ -582,6 +656,7 @@ void openModule(int id) {
   else if (id == P_NRF24)    moduleNrf24Scan();
   else if (id == P_SUBGHZ)   moduleSubghz();
   else if (id == P_IR)       moduleIrCapture();
+  else if (id == P_LOOT)     moduleLoot();
   else if (id == P_SETTINGS) moduleSettings();
   else                       modulePlaceholder(id);
 }
@@ -635,6 +710,7 @@ void loop() {
         else if (curProfile == P_NRF24) moduleNrf24Scan();
         else if (curProfile == P_SUBGHZ) moduleSubghz();
         else if (curProfile == P_IR) moduleIrCapture();
+        else if (curProfile == P_LOOT) moduleLoot();
         else if (curProfile == P_SETTINGS) {
           rotation = rotation ? 0 : 1;
           prefs.putUChar("rot", rotation);
