@@ -82,7 +82,23 @@
 //   - REALE: da instradare sui bit del PCF8574 (TODO)
 // ---------------------------------------------------------------------------
 #if NXS_TARGET_SIM
+// SIM (Wokwi): GPIO nativi. ATTENZIONE: sulla scheda REALE 4/5/6 sono pin radio
+// (CSN1/CC1101_CS/SUBGHZ_TX) -> per questo sul reale i tasti stanno sul PCF8574.
 #define BTN_PREV_PIN 4
 #define BTN_OK_PIN   5
 #define BTN_NEXT_PIN 6
+#else
+// REALE: tasti sull'espansore PCF8574 (I2C). SDA/SCL V2 non nei sorgenti:
+// -1 => usa i pin Wire di default (TODO: confermare sullo schema).
+#define I2C_SDA_PIN  -1
+#define I2C_SCL_PIN  -1
+// Bit del PCF8574 per i tasti (TODO: confermare sullo schema V2)
+#define PCF_BTN_PREV 3   // LEFT
+#define PCF_BTN_OK   6   // SELECT
+#define PCF_BTN_NEXT 4   // RIGHT
 #endif
+
+// Touch ILI9341 (XPT2046, TOUCH_CS 18) — sempre attivo come input alternativo.
+// Range ADC grezzo (da Touchscreen.h CiferTech): 300..3800 su X e Y.
+#define TOUCH_RAW_MIN 300
+#define TOUCH_RAW_MAX 3800

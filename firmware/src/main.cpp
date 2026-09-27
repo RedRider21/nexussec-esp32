@@ -112,8 +112,6 @@ const int FBAR = 20;        // altezza barra suggerimenti
 // Input tasti (debounce + fronte di discesa)
 // ----------------------------------------------------------------------------
 struct Btn { uint8_t pin; bool last; uint32_t t; };
-Btn bPrev{BTN_PREV, HIGH, 0}, bOk{BTN_OK, HIGH, 0}, bNext{BTN_NEXT, HIGH, 0};
-
 bool pressed(Btn &b) {
   bool now = digitalRead(b.pin);
   if (now != b.last && (millis() - b.t) > 30) {
@@ -122,6 +120,72 @@ bool pressed(Btn &b) {
     if (now == LOW) return true;   // fronte di discesa = premuto
   }
   return false;
+}
+
+#if NXS_TARGET_SIM
+// Tasti nativi (solo simulatore)
+Btn bPrev{BTN_PREV, HIGH, 0}, bOk{BTN_OK, HIGH, 0}, bNext{BTN_NEXT, HIGH, 0};
+#else
+// Tasti reali sull'espansore PCF8574 (I2C)
+#include <PCF8574.h>
+static PCF8574 pcf(PCF8574_ADDR_MIN);
+static bool pcfReady = false;
+static uint8_t pcfLast = 0xFF;
+static void pcfBegin() {
+#if (I2C_SDA_PIN >= 0)
+  Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
+#else
+  Wire.begin();
+#endif
+  pcfReady = pcf.begin();
+}
+static bool pcfEdge(uint8_t cur, uint8_t bit) {
+  // attivo a massa: premuto = bit basso; fronte di discesa
+  bool nowLow = !((cur >> bit) & 1);
+  bool wasLow = !((pcfLast >> bit) & 1);
+  return nowLow && !wasLow;
+}
+static void pollPcf(bool &p, bool &o, bool &n) {
+  if (!pcfReady) return;
+  uint8_t cur = pcf.read8();
+  if (pcfEdge(cur, PCF_BTN_PREV)) p = true;
+  if (pcfEdge(cur, PCF_BTN_OK))   o = true;
+  if (pcfEdge(cur, PCF_BTN_NEXT)) n = true;
+  pcfLast = cur;
+}
+#endif
+
+// Touch ILI9341 (XPT2046): tap a zone -> PREV / OK / NEXT (sempre attivo)
+static bool touchDown = false;
+static void pollTouch(bool &p, bool &o, bool &n) {
+  uint16_t z = tft.getTouchRawZ();
+  if (z > 600) {
+    if (!touchDown) {
+      touchDown = true;
+      uint16_t rx = 0, ry = 0;
+      tft.getTouchRaw(&rx, &ry);
+      long xr = rx;
+      if (xr < TOUCH_RAW_MIN) xr = TOUCH_RAW_MIN;
+      if (xr > TOUCH_RAW_MAX) xr = TOUCH_RAW_MAX;
+      int zone = (int)((xr - TOUCH_RAW_MIN) * 3 / (TOUCH_RAW_MAX - TOUCH_RAW_MIN)); // 0..2
+      if (zone <= 0) p = true; else if (zone == 1) o = true; else n = true;
+    }
+  } else {
+    touchDown = false;
+  }
+}
+
+// Lettura unificata della navigazione (tasti + touch)
+static void readNav(bool &p, bool &o, bool &n) {
+  p = o = n = false;
+#if NXS_TARGET_SIM
+  if (pressed(bPrev)) p = true;
+  if (pressed(bOk))   o = true;
+  if (pressed(bNext)) n = true;
+#else
+  pollPcf(p, o, n);
+#endif
+  pollTouch(p, o, n);
 }
 
 // ============================================================================
@@ -800,9 +864,13 @@ void applyRotation() {
 // ============================================================================
 void setup() {
   Serial.begin(115200);
+#if NXS_TARGET_SIM
   pinMode(BTN_PREV, INPUT_PULLUP);
   pinMode(BTN_OK, INPUT_PULLUP);
   pinMode(BTN_NEXT, INPUT_PULLUP);
+#else
+  pcfBegin();
+#endif
 
   prefs.begin("nxs", false);
   rotation = prefs.getUChar("rot", 0);
@@ -816,7 +884,8 @@ void setup() {
 }
 
 void loop() {
-  bool p = pressed(bPrev), o = pressed(bOk), n = pressed(bNext);
+  bool p, o, n;
+  readNav(p, o, n);
   if (!p && !o && !n) { delay(8); return; }
 
   switch (state) {
