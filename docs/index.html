@@ -193,13 +193,22 @@ footer{border-top:1px solid var(--line);padding:34px 0;color:var(--dim);font-siz
 <section><div class="wrap">
   <h2><span data-lang="it">La scheda di riferimento: ESP32-DIV V2</span><span data-lang="en">Reference board: ESP32-DIV V2</span></h2>
   <p class="sub"><span data-lang="it">Multi-tool open-source di <a href="https://github.com/cifertech/ESP32-DIV">CiferTech</a> (licenza MIT). Più radio in una scheda tascabile.</span><span data-lang="en">Open-source multi-tool by <a href="https://github.com/cifertech/ESP32-DIV">CiferTech</a> (MIT license). Several radios in one pocket board.</span></p>
-  <figure style="margin:0 0 20px">
-    <img src="img/esp32-div-v2-pcb.jpg" alt="Render PCB della ESP32-DIV V2 (53×100 mm)" loading="lazy"
-         style="width:100%;max-width:360px;display:block;margin:0 auto;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:#000">
-    <figcaption style="text-align:center;font-size:12px;color:var(--lead);margin-top:8px;font-family:ui-monospace,monospace">
-      <span data-lang="it">Render PCB — 53×100 mm · © CiferTech (MIT)</span><span data-lang="en">PCB render — 53×100 mm · © CiferTech (MIT)</span>
-    </figcaption>
-  </figure>
+  <div style="display:flex;flex-wrap:wrap;gap:24px;justify-content:center;align-items:flex-start;margin:8px 0 24px">
+    <figure style="margin:0;flex:1 1 220px;max-width:280px;text-align:center">
+      <img src="img/esp32-div-v2-board.png" alt="Scheda ESP32-DIV V2 con display e 4 antenne" loading="lazy"
+           style="width:100%;max-width:250px;display:block;margin:0 auto;filter:drop-shadow(0 12px 30px rgba(0,0,0,.5))">
+      <figcaption style="font-size:12px;color:var(--lead);margin-top:10px;font-family:ui-monospace,monospace">
+        <span data-lang="it">La scheda (display 2,8" + 4 antenne)</span><span data-lang="en">The board (2.8" display + 4 antennas)</span>
+      </figcaption>
+    </figure>
+    <figure style="margin:0;flex:1 1 220px;max-width:320px;text-align:center">
+      <img src="img/esp32-div-v2-pcb.jpg" alt="Render PCB della ESP32-DIV V2 (53×100 mm)" loading="lazy"
+           style="width:100%;max-width:300px;display:block;margin:0 auto;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:#000">
+      <figcaption style="font-size:12px;color:var(--lead);margin-top:10px;font-family:ui-monospace,monospace">
+        <span data-lang="it">Render PCB — 53×100 mm · © CiferTech (MIT)</span><span data-lang="en">PCB render — 53×100 mm · © CiferTech (MIT)</span>
+      </figcaption>
+    </figure>
+  </div>
   <ul class="plain">
     <li><span class="k">▸</span><div><b>MCU</b> — <span data-lang="it">ESP32-S3, 16 MB flash (dual-core, USB nativa → BadUSB, BLE5).</span><span data-lang="en">ESP32-S3, 16 MB flash (dual-core, native USB → BadUSB, BLE5).</span></div></li>
     <li><span class="k">▸</span><div><b data-lang="it">Radio</b><b data-lang="en">Radios</b> — <span data-lang="it">WiFi + BLE, 3× NRF24L01 (2,4 GHz), CC1101 (sub-GHz), ricetrasmettitore infrarossi.</span><span data-lang="en">WiFi + BLE, 3× NRF24L01 (2.4 GHz), CC1101 (sub-GHz), infrared transceiver.</span></div></li>
