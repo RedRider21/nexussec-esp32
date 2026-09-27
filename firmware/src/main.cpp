@@ -32,6 +32,8 @@
 #include <ELECHOUSE_CC1101_SRC_DRV.h>
 #include <FS.h>
 #include <SD.h>
+#include "USB.h"
+#include "USBHIDKeyboard.h"
 #include "board_pins.h"
 
 #ifndef NXS_FW_VERSION
@@ -62,6 +64,7 @@ static const uint16_t C_SEL   = RGB(13, 43, 49);
 
 TFT_eSPI tft = TFT_eSPI();
 Preferences prefs;
+USBHIDKeyboard Keyboard;   // BadUSB/HID (USB nativa ESP32-S3)
 
 // Bus SPI condiviso da radio (NRF24/CC1101) e microSD (pin 12/13/11).
 static SPIClass radioSPI(HSPI);
@@ -809,6 +812,135 @@ void moduleLoot() {
   footerBar("OK aggiorna   PREV menu");
 }
 
+// ============================================================================
+// Modulo REALE: BadUSB / HID (DuckyScript subset da microSD, USB nativa S3)
+//   Layout tastiera US di default (mappa IT: TODO). SOLO su macchine autorizzate.
+// ============================================================================
+static int badusbSel = 0;
+static String plList[20];
+static int plN = 0;
+
+static uint8_t duckyMod(const String &t) {
+  if (t == "GUI" || t == "WINDOWS" || t == "WIN") return KEY_LEFT_GUI;
+  if (t == "CTRL" || t == "CONTROL") return KEY_LEFT_CTRL;
+  if (t == "ALT") return KEY_LEFT_ALT;
+  if (t == "SHIFT") return KEY_LEFT_SHIFT;
+  return 0;
+}
+static uint8_t duckyKey(const String &t) {
+  if (t == "ENTER" || t == "RETURN") return KEY_RETURN;
+  if (t == "TAB") return KEY_TAB;
+  if (t == "ESC" || t == "ESCAPE") return KEY_ESC;
+  if (t == "SPACE") return ' ';
+  if (t == "DELETE" || t == "DEL") return KEY_DELETE;
+  if (t == "BACKSPACE") return KEY_BACKSPACE;
+  if (t == "UP" || t == "UPARROW") return KEY_UP_ARROW;
+  if (t == "DOWN" || t == "DOWNARROW") return KEY_DOWN_ARROW;
+  if (t == "LEFT" || t == "LEFTARROW") return KEY_LEFT_ARROW;
+  if (t == "RIGHT" || t == "RIGHTARROW") return KEY_RIGHT_ARROW;
+  if (t == "HOME") return KEY_HOME;
+  if (t == "END") return KEY_END;
+  if (t.length() == 1) return (uint8_t)t[0];
+  return 0;
+}
+static void duckyLine(String line) {
+  line.trim();
+  if (line.length() == 0 || line.startsWith("REM")) return;
+  if (line.startsWith("DELAY")) { delay(line.substring(5).toInt()); return; }
+  if (line.startsWith("STRING ")) { Keyboard.print(line.substring(7)); return; }
+  // combo: modificatori + tasto finale
+  uint8_t mods[4]; int nm = 0; uint8_t key = 0;
+  String rest = line;
+  while (true) {
+    int sp = rest.indexOf(' ');
+    String tok = (sp < 0) ? rest : rest.substring(0, sp);
+    uint8_t m = duckyMod(tok);
+    if (m && nm < 4) mods[nm++] = m; else key = duckyKey(tok);
+    if (sp < 0) break;
+    rest = rest.substring(sp + 1);
+  }
+  for (int i = 0; i < nm; i++) Keyboard.press(mods[i]);
+  if (key) Keyboard.press(key);
+  delay(25);
+  Keyboard.releaseAll();
+}
+static void runDuckyFile(const char *path) {
+  File f = SD.open(path);
+  if (!f) return;
+  String line;
+  while (f.available()) {
+    char c = f.read();
+    if (c == '\n') { duckyLine(line); line = ""; }
+    else if (c != '\r') line += c;
+  }
+  if (line.length()) duckyLine(line);
+  f.close();
+}
+static void runDuckyBuiltin() {
+  Keyboard.print("NexusSec ESP32 - BadUSB HID demo (solo test autorizzati)");
+  Keyboard.write(KEY_RETURN);
+}
+static void badusbScan() {
+  plN = 0;
+  if (sdInit()) {
+    File d = SD.open("/payloads");
+    if (d && d.isDirectory()) {
+      File f = d.openNextFile();
+      while (f && plN < 20) {
+        if (!f.isDirectory()) plList[plN++] = String("/payloads/") + f.name();
+        f = d.openNextFile();
+      }
+    }
+  }
+}
+void moduleBadusb() {
+  tft.fillScreen(C_BG);
+  statusBar("BADUSB / HID");
+  badusbScan();
+
+  tft.setTextDatum(ML_DATUM);
+  tft.setTextFont(1);
+  tft.setTextColor(C_CRIT, C_BG);
+  tft.drawString("! Esegue keystroke sul PC collegato", 6, SBAR + 10);
+  tft.setTextColor(C_MUT, C_BG);
+  tft.drawString("Payload /payloads (SD) - layout US", 6, SBAR + 24);
+
+  int y = SBAR + 40, rowH = 20, maxRows = (H - FBAR - y) / rowH;
+  if (plN == 0) {
+    tft.setTextFont(2);
+    tft.setTextColor(C_CY, C_BG);
+    tft.drawString("> demo integrata (HID)", 8, y + rowH / 2);
+  } else {
+    if (badusbSel >= plN) badusbSel = 0;
+    for (int i = 0; i < plN && i < maxRows; i++) {
+      String nm = plList[i];
+      int s = nm.lastIndexOf('/');
+      if (s >= 0) nm = nm.substring(s + 1);
+      if (nm.length() > 20) nm = nm.substring(0, 19) + "~";
+      tft.setTextFont(2);
+      bool sel = (i == badusbSel);
+      tft.setTextColor(sel ? C_CY : C_TXT, C_BG);
+      tft.drawString((sel ? "> " : "  ") + nm, 8, y + rowH / 2);
+      y += rowH;
+    }
+  }
+  footerBar("OK esegui  NEXT scegli  PREV menu");
+}
+void badusbRun() {
+  tft.fillScreen(C_BG);
+  statusBar("BADUSB / HID");
+  tft.setTextDatum(MC_DATUM);
+  tft.setTextFont(4);
+  tft.setTextColor(C_WARN, C_BG);
+  tft.drawString("Esecuzione...", W / 2, H / 2);
+  delay(400);
+  if (plN == 0) runDuckyBuiltin();
+  else runDuckyFile(plList[badusbSel % plN].c_str());
+  tft.setTextColor(C_OK, C_BG);
+  tft.drawString("Fatto", W / 2, H / 2 + 30);
+  footerBar("OK di nuovo  NEXT scegli  PREV menu");
+}
+
 // Schermata segnaposto per i moduli non ancora implementati
 void modulePlaceholder(int id) {
   tft.fillScreen(C_BG);
@@ -848,6 +980,7 @@ void openModule(int id) {
   else if (id == P_NRF24)    moduleNrf24Scan();
   else if (id == P_SUBGHZ)   moduleSubghz();
   else if (id == P_IR)       moduleIrCapture();
+  else if (id == P_BADUSB)   { badusbSel = 0; moduleBadusb(); }
   else if (id == P_LOOT)     moduleLoot();
   else if (id == P_SETTINGS) moduleSettings();
   else                       modulePlaceholder(id);
@@ -871,6 +1004,9 @@ void setup() {
 #else
   pcfBegin();
 #endif
+
+  Keyboard.begin();   // BadUSB/HID (effettivo solo su hardware reale)
+  USB.begin();
 
   prefs.begin("nxs", false);
   rotation = prefs.getUChar("rot", 0);
@@ -902,12 +1038,14 @@ void loop() {
     case ST_MODULE:
       if (p) { state = ST_HOME; drawHome(); }        // indietro
       else if (n && curProfile == P_RECON) { wardrivingMode = true; moduleWardriving(); }
+      else if (n && curProfile == P_BADUSB) { badusbSel++; moduleBadusb(); }
       else if (o) {                                   // azione del modulo
         if (curProfile == P_RECON) { if (wardrivingMode) moduleWardriving(); else moduleWifiScan(); }
         else if (curProfile == P_BLE) moduleBleScan();
         else if (curProfile == P_NRF24) moduleNrf24Scan();
         else if (curProfile == P_SUBGHZ) moduleSubghz();
         else if (curProfile == P_IR) moduleIrCapture();
+        else if (curProfile == P_BADUSB) badusbRun();
         else if (curProfile == P_LOOT) moduleLoot();
         else if (curProfile == P_SETTINGS) {
           rotation = rotation ? 0 : 1;
