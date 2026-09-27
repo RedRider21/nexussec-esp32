@@ -29,6 +29,7 @@
 #include <IRrecv.h>
 #include <IRremoteESP8266.h>
 #include <IRutils.h>
+#include <ELECHOUSE_CC1101_SRC_DRV.h>
 #include "board_pins.h"
 
 #ifndef NXS_FW_VERSION
@@ -492,6 +493,56 @@ void moduleIrCapture() {
   footerBar("OK ripeti   PREV menu");
 }
 
+// ============================================================================
+// Modulo REALE: Sub-GHz CC1101 (RSSI/presenza sui pin ESP32-DIV V2)
+// ============================================================================
+void moduleSubghz() {
+  tft.fillScreen(C_BG);
+  statusBar("SUB-GHZ CC1101");
+  tft.setTextDatum(MC_DATUM);
+  tft.setTextFont(2);
+  tft.setTextColor(C_CY, C_BG);
+  tft.drawString("CC1101 433.92 MHz...", W / 2, H / 2);
+
+  ELECHOUSE_cc1101.setSpiPin(RADIO_SPI_SCK, RADIO_SPI_MISO, RADIO_SPI_MOSI, CC1101_CS_PIN);
+  ELECHOUSE_cc1101.setGDO(CC1101_GDO0_PIN, CC1101_GDO2_PIN);
+  ELECHOUSE_cc1101.Init();
+  bool present = ELECHOUSE_cc1101.getCC1101();
+  ELECHOUSE_cc1101.setMHZ(433.92);
+  ELECHOUSE_cc1101.SetRx();
+
+  long acc = 0; int n = 0, rssiMax = -127;
+  uint32_t t0 = millis();
+  while (millis() - t0 < 1500) {
+    int r = ELECHOUSE_cc1101.getRssi();
+    if (r > rssiMax) rssiMax = r;
+    acc += r; n++;
+    delay(20);
+  }
+  int rssiAvg = n ? (int)(acc / n) : 0;
+
+  tft.fillScreen(C_BG);
+  statusBar("SUB-GHZ CC1101");
+  if (present) {
+    tft.setTextDatum(ML_DATUM);
+    tft.setTextFont(2);
+    tft.setTextColor(C_MUT, C_BG); tft.drawString("Frequenza:", 8, SBAR + 22);
+    tft.setTextColor(C_CY, C_BG);  tft.drawString("433.92 MHz", 8, SBAR + 44);
+    char b[24];
+    tft.setTextColor(C_MUT, C_BG); tft.drawString("RSSI medio:", 8, SBAR + 74);
+    snprintf(b, sizeof(b), "%d dBm", rssiAvg);
+    tft.setTextColor(C_TXT, C_BG); tft.drawString(b, 8, SBAR + 96);
+    tft.setTextColor(C_MUT, C_BG); tft.drawString("RSSI max:", 8, SBAR + 124);
+    snprintf(b, sizeof(b), "%d dBm", rssiMax);
+    tft.setTextColor(C_TXT, C_BG); tft.drawString(b, 8, SBAR + 146);
+  } else {
+    tft.setTextDatum(MC_DATUM);
+    tft.setTextColor(C_CRIT, C_BG);
+    tft.drawString("CC1101 non rilevato", W / 2, H / 2);
+  }
+  footerBar("OK ripeti   PREV menu");
+}
+
 // Schermata segnaposto per i moduli non ancora implementati
 void modulePlaceholder(int id) {
   tft.fillScreen(C_BG);
@@ -529,6 +580,7 @@ void openModule(int id) {
   if (id == P_RECON)         moduleWifiScan();
   else if (id == P_BLE)      moduleBleScan();
   else if (id == P_NRF24)    moduleNrf24Scan();
+  else if (id == P_SUBGHZ)   moduleSubghz();
   else if (id == P_IR)       moduleIrCapture();
   else if (id == P_SETTINGS) moduleSettings();
   else                       modulePlaceholder(id);
@@ -581,6 +633,7 @@ void loop() {
         if (curProfile == P_RECON) moduleWifiScan();
         else if (curProfile == P_BLE) moduleBleScan();
         else if (curProfile == P_NRF24) moduleNrf24Scan();
+        else if (curProfile == P_SUBGHZ) moduleSubghz();
         else if (curProfile == P_IR) moduleIrCapture();
         else if (curProfile == P_SETTINGS) {
           rotation = rotation ? 0 : 1;
