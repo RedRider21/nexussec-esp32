@@ -114,6 +114,31 @@ validato. Il bus SPI display vs radio e i tasti PCF8574 sono i punti da collauda
 - Compilare: `cd firmware && ~/.local/bin/pio run -e esp32-div-v2`
 - Toolchain in `~/.platformio` (~2,4 GB, cancellabile). Disco al 93%: attenzione.
 
+## Aggiornamento 2026-09-27 (3) — firmware completo, case in pausa, cleanup
+**Firmware**: tutti i 10 profili implementati e compilanti (sim + hw). Aggiunti in
+questa sessione: Attacco WiFi (deauth+beacon), Handshake/PMKID (→/loot/pmkid.22000),
+layout tastiera **IT** per BadUSB. ⚠️ non testato su hardware.
+
+**Case 3D**:
+- Stampabile: `hardware/case/nexussec-esp32-case.scad` (+README) — quote reali
+  (case 2KLAB 59×105,5×24, PCB 53,09×100,46), back+fascia a filo, 4 viti, logo inciso.
+- **Rendering 3D interattivo** (Three.js): `docs/case-viewer.html` + `docs/case/*.glb/stl`
+  + `hardware/case/build_case.py`. Peso ~36 g. Artifact privato `Kxd8twuhCa47Vuh73hfBp8`.
+- ⚠️ **IN PAUSA**: rifinire con **misure esatte** + **fessure laterali** per le porte
+  (USB-C, microSD, 4×SMA in alto, tasti) — guardare i case in vendita/community
+  (Downlord MakerWorld, 2KLAB Cults3D, AliExpress).
+
+**Git/GitHub (richiesta utente)**: pushato tutto TRANNE il **rendering 3D**. Restano
+SOLO locali (untracked, non su GitHub): `docs/case-viewer.html`, `docs/case/`,
+`hardware/case/build_case.py`.
+
+**Cleanup**: rimosse trimesh/shapely/manifold3d (per rigenerare il GLB: reinstallarle).
+Tenuto il compilatore PlatformIO (`~/.platformio` 2,4 GB) + numpy.
+
+**Da fare prossima sessione**: misure case → .scad + fessure porte → rifinire viewer →
+pubblicare su Pages il **viewer 3D** e il **mockup interattivo** (`ui-mockup.html`) →
+tool distro `nxs-esp32`.
+
 ## File utili
 - `docs/ui-mockup.html` — il mockup (aprire nel browser o via Artifact).
 - `docs/prossimi-passi.md` — handoff generale + strade firmware A/B.
