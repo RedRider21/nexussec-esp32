@@ -56,6 +56,13 @@
 #define IR_RX_PIN       21
 #define IR_TX_PIN       14
 
+// GPS Neo-6M (UART2, opzionale/esterno). ATTENZIONE: sulla V2 questi pin
+// COINCIDONO con CC1101 (RX5=CC1101_CS, TX6=CC1101_GDO0) -> uso alternato
+// (GPS in wardriving, CC1101 in sub-GHz: mai insieme).
+#define GPS_UART_RX     5
+#define GPS_UART_TX     6
+#define GPS_UART_BAUD   9600
+
 // Buzzer: non presente sulla V2 (-1)
 #define BUZZER_PIN      -1
 

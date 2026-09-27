@@ -101,6 +101,7 @@ enum AppState { ST_LEGAL, ST_HOME, ST_MODULE };
 AppState state = ST_LEGAL;
 int      homeSel = 0;       // riquadro selezionato nella home
 int      curProfile = -1;   // profilo aperto
+bool     wardrivingMode = false; // sotto-modalità di Recon WiFi
 uint8_t  rotation = 0;      // 0 = verticale (240x320), 1 = orizzontale (320x240)
 
 int W = 240, H = 320;       // dimensioni correnti dello schermo
@@ -345,7 +346,7 @@ void moduleWifiScan() {
     tft.drawString("Nessuna rete", W / 2, H / 2);
   }
   WiFi.scanDelete();
-  footerBar("OK ripeti   PREV menu");
+  footerBar("OK ripeti  NEXT wardriving  PREV menu");
 }
 
 // ============================================================================
@@ -564,6 +565,133 @@ void moduleSubghz() {
 }
 
 // ============================================================================
+// GPS (Neo-6M, UART2) — parsing minimale NMEA GGA per lat/lon
+// ============================================================================
+static HardwareSerial gpsSerial(2);
+static bool   gpsStarted = false;
+static bool   gFix = false;
+static double gLat = 0, gLon = 0;
+
+static void gpsBegin() {
+  if (!gpsStarted) {
+    gpsSerial.begin(GPS_UART_BAUD, SERIAL_8N1, GPS_UART_RX, GPS_UART_TX);
+    gpsStarted = true;
+  }
+}
+static void gpsEnd() {
+  if (gpsStarted) { gpsSerial.end(); gpsStarted = false; }
+}
+static double nmeaToDeg(const char *v, char hemi) {
+  double val = atof(v);
+  int deg = (int)(val / 100);
+  double minutes = val - deg * 100;
+  double d = deg + minutes / 60.0;
+  if (hemi == 'S' || hemi == 'W') d = -d;
+  return d;
+}
+static void gpsPoll() {
+  static char line[100];
+  static int idx = 0;
+  while (gpsSerial.available()) {
+    char c = gpsSerial.read();
+    if (c == '\n' || c == '\r') {
+      line[idx] = 0;
+      if (idx > 6 && (strncmp(line, "$GPGGA", 6) == 0 || strncmp(line, "$GNGGA", 6) == 0)) {
+        // campi: 0=$..GGA 1=time 2=lat 3=N/S 4=lon 5=E/W 6=fixQ
+        char *fld[10] = {0};
+        int nf = 0;
+        char *p = line;
+        fld[nf++] = p;
+        while (*p && nf < 10) { if (*p == ',') { *p = 0; fld[nf++] = p + 1; } p++; }
+        if (nf >= 7 && fld[6] && atoi(fld[6]) > 0 && fld[2][0] && fld[4][0]) {
+          gLat = nmeaToDeg(fld[2], fld[3][0]);
+          gLon = nmeaToDeg(fld[4], fld[5][0]);
+          gFix = true;
+        }
+      }
+      idx = 0;
+    } else if (idx < 99) {
+      line[idx++] = c;
+    }
+  }
+}
+
+// ============================================================================
+// Modulo REALE: Wardriving (WiFi continuo + GPS opz. -> CSV su SD per HORUS)
+// ============================================================================
+void moduleWardriving() {
+  tft.fillScreen(C_BG);
+  statusBar("WARDRIVING");
+  tft.setTextDatum(MC_DATUM);
+  tft.setTextFont(2);
+  tft.setTextColor(C_CY, C_BG);
+  tft.drawString("Avvio wardriving...", W / 2, H / 2);
+
+  bool sd = sdInit();
+  gpsBegin();
+
+  File f;
+  const char *fn = "/WARDRIVE.csv";
+  if (sd) {
+    bool isNew = !SD.exists(fn);
+    f = SD.open(fn, FILE_APPEND);
+    if (f && isNew) f.println("BSSID,SSID,Enc,Channel,RSSI,Lat,Lon,Timestamp");
+  }
+
+  static String seen[300];
+  static int seenN = 0;   // static: dedup mantenuto tra sessioni
+  int added = 0;
+
+  uint32_t t0 = millis();
+  while (millis() - t0 < 15000) {
+    gpsPoll();
+    int n = WiFi.scanNetworks(false, true);
+    for (int i = 0; i < n; i++) {
+      String bssid = WiFi.BSSIDstr(i);
+      bool dup = false;
+      for (int k = 0; k < seenN; k++) if (seen[k] == bssid) { dup = true; break; }
+      if (!dup && seenN < 300) {
+        seen[seenN++] = bssid;
+        added++;
+        if (f) {
+          f.printf("%s,%s,%s,%d,%d,%.6f,%.6f,%lu\n",
+                   bssid.c_str(), WiFi.SSID(i).c_str(),
+                   (WiFi.encryptionType(i) == WIFI_AUTH_OPEN ? "OPEN" : "WPA"),
+                   WiFi.channel(i), WiFi.RSSI(i),
+                   gFix ? gLat : 0.0, gFix ? gLon : 0.0,
+                   (unsigned long)(millis() / 1000));
+        }
+      }
+    }
+    WiFi.scanDelete();
+    gpsPoll();
+
+    // aggiornamento live
+    tft.fillRect(0, SBAR, W, H - SBAR - FBAR, C_BG);
+    tft.setTextDatum(MC_DATUM);
+    tft.setTextFont(4);
+    tft.setTextColor(C_CY, C_BG);
+    char num[8]; snprintf(num, sizeof(num), "%d", seenN);
+    tft.drawString(num, W / 2, SBAR + 40);
+    tft.setTextFont(2);
+    tft.setTextColor(C_MUT, C_BG);
+    tft.drawString("reti totali", W / 2, SBAR + 70);
+    char nn[20]; snprintf(nn, sizeof(nn), "+%d nuove", added);
+    tft.setTextColor(C_OK, C_BG);
+    tft.drawString(nn, W / 2, SBAR + 96);
+    tft.setTextColor(gFix ? C_OK : C_WARN, C_BG);
+    tft.drawString(gFix ? "GPS: FIX" : "GPS: nessun fix", W / 2, SBAR + 124);
+    tft.setTextColor(C_MUT, C_BG);
+    tft.setTextFont(1);
+    tft.drawString(sd ? "-> /WARDRIVE.csv (HORUS)" : "microSD assente: no log", W / 2, SBAR + 150);
+  }
+
+  if (f) f.close();
+  gpsEnd();
+  footerBar("OK altra sessione   PREV menu");
+}
+
+// ============================================================================
 // Modulo REALE: Loot / microSD (info scheda + lista file)
 // ============================================================================
 void moduleLoot() {
@@ -651,7 +779,7 @@ void moduleSettings() {
 void openModule(int id) {
   curProfile = id;
   state = ST_MODULE;
-  if (id == P_RECON)         moduleWifiScan();
+  if (id == P_RECON)       { wardrivingMode = false; moduleWifiScan(); }
   else if (id == P_BLE)      moduleBleScan();
   else if (id == P_NRF24)    moduleNrf24Scan();
   else if (id == P_SUBGHZ)   moduleSubghz();
@@ -704,8 +832,9 @@ void loop() {
 
     case ST_MODULE:
       if (p) { state = ST_HOME; drawHome(); }        // indietro
+      else if (n && curProfile == P_RECON) { wardrivingMode = true; moduleWardriving(); }
       else if (o) {                                   // azione del modulo
-        if (curProfile == P_RECON) moduleWifiScan();
+        if (curProfile == P_RECON) { if (wardrivingMode) moduleWardriving(); else moduleWifiScan(); }
         else if (curProfile == P_BLE) moduleBleScan();
         else if (curProfile == P_NRF24) moduleNrf24Scan();
         else if (curProfile == P_SUBGHZ) moduleSubghz();
