@@ -106,6 +106,7 @@ AppState state = ST_LEGAL;
 int      homeSel = 0;       // riquadro selezionato nella home
 int      curProfile = -1;   // profilo aperto
 bool     wardrivingMode = false; // sotto-modalità di Recon WiFi
+bool     layoutIT = false;       // BadUSB: layout tastiera IT (default US)
 uint8_t  rotation = 0;      // 0 = verticale (240x320), 1 = orizzontale (320x240)
 
 int W = 240, H = 320;       // dimensioni correnti dello schermo
@@ -821,6 +822,53 @@ static int badusbSel = 0;
 static String plList[20];
 static int plN = 0;
 
+// --- Digitazione con layout tastiera IT (beta) ---
+// Manda il tasto FISICO US che, su layout italiano, produce il carattere voluto.
+static void pressCombo(uint8_t mod1, uint8_t mod2, uint8_t proxy) {
+  if (mod1) Keyboard.press(mod1);
+  if (mod2) Keyboard.press(mod2);
+  Keyboard.press(proxy);
+  delay(6);
+  Keyboard.releaseAll();
+}
+static void typeITchar(char c) {
+  const uint8_t SH = KEY_LEFT_SHIFT, AG = KEY_RIGHT_ALT;   // AltGr
+  switch (c) {
+    case '!': pressCombo(SH, 0, '1'); return;
+    case '"': pressCombo(SH, 0, '2'); return;
+    case '$': pressCombo(SH, 0, '4'); return;
+    case '%': pressCombo(SH, 0, '5'); return;
+    case '&': pressCombo(SH, 0, '6'); return;
+    case '/': pressCombo(SH, 0, '7'); return;
+    case '(': pressCombo(SH, 0, '8'); return;
+    case ')': pressCombo(SH, 0, '9'); return;
+    case '=': pressCombo(SH, 0, '0'); return;
+    case '?': pressCombo(SH, 0, '-'); return;
+    case '\'':pressCombo(0,  0, '-'); return;
+    case '^': pressCombo(SH, 0, '='); return;
+    case '+': pressCombo(0,  0, ']'); return;
+    case '*': pressCombo(SH, 0, ']'); return;
+    case '@': pressCombo(0,  AG, ';'); return;
+    case '#': pressCombo(0,  AG, '\''); return;
+    case '[': pressCombo(0,  AG, '['); return;
+    case ']': pressCombo(0,  AG, ']'); return;
+    case '{': pressCombo(SH, AG, '['); return;
+    case '}': pressCombo(SH, AG, ']'); return;
+    case '-': pressCombo(0,  0, '/'); return;
+    case '_': pressCombo(SH, 0, '/'); return;
+    case ':': pressCombo(SH, 0, '.'); return;
+    case ';': pressCombo(SH, 0, ','); return;
+    case '\\':pressCombo(0,  0, '`'); return;
+    case '|': pressCombo(SH, 0, '`'); return;
+    case '~': pressCombo(0,  AG, '='); return;
+    default:  Keyboard.write((uint8_t)c); return;  // lettere, cifre, spazio, . ,
+  }
+}
+static void typeStr(const String &s) {
+  if (!layoutIT) { Keyboard.print(s); return; }
+  for (unsigned i = 0; i < s.length(); i++) typeITchar(s[i]);
+}
+
 static uint8_t duckyMod(const String &t) {
   if (t == "GUI" || t == "WINDOWS" || t == "WIN") return KEY_LEFT_GUI;
   if (t == "CTRL" || t == "CONTROL") return KEY_LEFT_CTRL;
@@ -848,7 +896,7 @@ static void duckyLine(String line) {
   line.trim();
   if (line.length() == 0 || line.startsWith("REM")) return;
   if (line.startsWith("DELAY")) { delay(line.substring(5).toInt()); return; }
-  if (line.startsWith("STRING ")) { Keyboard.print(line.substring(7)); return; }
+  if (line.startsWith("STRING ")) { typeStr(line.substring(7)); return; }
   // combo: modificatori + tasto finale
   uint8_t mods[4]; int nm = 0; uint8_t key = 0;
   String rest = line;
@@ -1238,10 +1286,13 @@ void moduleSettings() {
   tft.drawString("Orientamento:", 10, SBAR + 24);
   tft.setTextColor(C_CY, C_BG);
   tft.drawString(rotation == 0 ? "Verticale" : "Orizzontale", 10, SBAR + 48);
-  tft.setTextColor(C_MUT, C_BG);
-  tft.setTextFont(1);
-  tft.drawString("firmware v" NXS_FW_VERSION, 10, SBAR + 78);
-  footerBar("OK cambia orientamento   PREV menu");
+  tft.setTextFont(2); tft.setTextColor(C_TXT, C_BG);
+  tft.drawString("Layout BadUSB:", 10, SBAR + 78);
+  tft.setTextColor(C_CY, C_BG);
+  tft.drawString(layoutIT ? "IT" : "US", 10, SBAR + 100);
+  tft.setTextColor(C_MUT, C_BG); tft.setTextFont(1);
+  tft.drawString("firmware v" NXS_FW_VERSION, 10, SBAR + 128);
+  footerBar("OK orientamento  NEXT layout  PREV menu");
 }
 
 void openModule(int id) {
@@ -1284,6 +1335,7 @@ void setup() {
 
   prefs.begin("nxs", false);
   rotation = prefs.getUChar("rot", 0);
+  layoutIT = prefs.getUChar("kbdit", 0);
 
   tft.init();
   applyRotation();
@@ -1315,6 +1367,7 @@ void loop() {
       else if (n && curProfile == P_BADUSB) { badusbSel++; moduleBadusb(); }
       else if (n && curProfile == P_ATTACK) { atkSel++; moduleWifiAttack(); }
       else if (n && curProfile == P_HANDSHAKE) { hsSel++; moduleHandshake(); }
+      else if (n && curProfile == P_SETTINGS) { layoutIT = !layoutIT; prefs.putUChar("kbdit", layoutIT ? 1 : 0); moduleSettings(); }
       else if (o) {                                   // azione del modulo
         if (curProfile == P_RECON) { if (wardrivingMode) moduleWardriving(); else moduleWifiScan(); }
         else if (curProfile == P_ATTACK) wifiAttackRun();
