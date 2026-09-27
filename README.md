@@ -1,64 +1,80 @@
 # NexusSec ESP32
 
-**Sito**: https://redrider21.github.io/nexussec-esp32/ · parte dell'ecosistema NexusSec.
+**Sito**: https://redrider21.github.io/nexussec-esp32/ · **Flash dal browser**:
+https://redrider21.github.io/nexussec-esp32/flash.html
 
-Gadget hardware di **ricognizione wireless** basato su **ESP32**, **corollario**
-dell'ecosistema **NexusSec** (distro NexusSec OS + app Android Termux-NexusSEC-OS
-+ DE Vesper). Progetto **a sé ma collegato**: firmware **nostro** (non adottiamo
-Marauder/Bruce), brandizzato e integrato con la distro.
+Gadget hardware di **ricognizione wireless** basato su **ESP32-DIV V2** (ESP32-S3),
+corollario dell'ecosistema **NexusSec** (distro NexusSec OS + app Termux-NexusSEC-OS
++ DE Vesper). Firmware **nostro** (Opzione B), brandizzato e integrato con la distro.
 
-> Stato: **scaffold / da avviare**. Qui c'è il piano; il firmware va sviluppato.
+> **Stato**: firmware **v0.1.0 (beta)** — 8 moduli, **compila** su simulatore e
+> scheda reale. ⚠️ **Non ancora testato su hardware fisico**: trattare come beta.
 
 ## Cos'è (e cosa non è)
-L'ESP32 è un microcontrollore: **non** esegue Linux/una distro. Ha però **WiFi
-2.4 GHz + BLE** integrati, quindi è perfetto come **piccolo drone di ricognizione**
-che la distro prepara (flash) e da cui riprende i dati.
+L'ESP32-DIV V2 è un **microcontrollore**: non esegue Linux. Unisce più radio in un
+gadget tascabile che la distro prepara (flash) e da cui riprende i dati.
 
-**Fa:** scan WiFi/BLE, sniffer, wardriving, deauth, beacon/probe spam, rogue AP /
-Evil Portal, cattura PMKID/handshake, e — su **ESP32‑S2/S3** — **BadUSB/HID**.
-**Non fa:** WiFi 5 GHz, sub‑GHz (serve un CC1101), monitor‑mode completo, cracking
-pesante (lo fa il PC).
+- **Fa**: scan WiFi/BLE, wardriving, deauth/beacon-spam/rogue-AP*, PMKID/handshake*,
+  2,4 GHz (NRF24), sub-GHz (CC1101), IR, BadUSB/HID, microSD.
+- **Non fa**: WiFi 5 GHz, monitor-mode completo come una NIC vera, cracking pesante
+  (lo fa il PC coi dati raccolti).
 
-## Menu a "profili" (mini)
-Menu semplice su schermo, con profili adattati all'hardware:
-- 📡 Ricognizione WiFi · 🎯 Attacco WiFi (autorizzato) · 🔑 Handshake/PMKID ·
-  🦷 Bluetooth/BLE · ⌨️ BadUSB (solo S2/S3)
+(*) funzioni offensive: solo su reti/dispositivi **autorizzati** (pentest/lab).
 
-## Integrazione con NexusSec (il "collegamento")
-- **Flash con un click** dalla distro (`nxs-esp32`/`vesper-esp32` via `esptool`).
-- **Import risultati**: wardriving → mappa **HORUS**; handshake/PMKID → cartella
-  **loot** per crackarli con i tool della distro.
+## Struttura del repository
+```
+nexussec-esp32/
+├── firmware/                 # firmware nostro (Arduino-ESP32 + PlatformIO)
+│   ├── platformio.ini        # env: esp32-div-v2 (sim) + esp32-div-v2-hw (reale)
+│   ├── src/main.cpp          # boot+avviso, menu profili, tutti i moduli
+│   ├── src/board_pins.h      # MAPPA PIN UFFICIALE ESP32-DIV V2
+│   ├── wokwi.toml + diagram.json   # simulatore Wokwi
+│   └── vendor/               # firmware ORIGINALE CiferTech (ripristino, MIT)
+├── docs/                     # sito GitHub Pages
+│   ├── index.html            # sito (con galleria screenshot + PCB)
+│   ├── flash.html            # flasher web (ESP Web Tools)
+│   ├── flash/                # manifest + bin per il flasher
+│   ├── ui-mockup.html        # mockup interattivo dell'UI (kiosk: #kiosk:<schermata>)
+│   ├── img/                  # screenshot UI + immagine hardware
+│   ├── manuale.md            # MANUALE completo (uso + sviluppo)
+│   └── nxs-esp32-integration.md   # specifica per il tool distro nxs-esp32
+└── CLAUDE.md                 # note per l'assistente
+```
 
-## Hardware consigliato
-- **Board**: **ESP32‑S3** con PSRAM (dual‑core, USB nativa per BadUSB, BLE5).
-- **Devkit pronti**: LilyGO **T‑Display‑S3**, LilyGO **T‑Embed** (encoder; variante
-  **CC1101** = sub‑GHz), **M5Stack Core2 / M5StickC Plus2**, **CYD** (TFT touch).
-- **Display**: TFT SPI (ST7789/ILI9341) o OLED SSD1306.
-- **Input**: encoder rotativo + tasto, o TFT touch.
-- **Antenna**: connettore **u.FL/IPEX** + antenna 2.4 GHz (2–3 dBi).
-- **microSD** (log/handshake/payload) · **GPS** UART (u‑blox NEO‑6M/M8N) per il
-  wardriving · **LiPo + carica** per portabilità.
+## Moduli del firmware (menu a profili)
+Recon WiFi · Wardriving (→CSV/HORUS) · Attacco WiFi* · Handshake/PMKID* · BLE ·
+NRF24 (spettro 2,4 GHz) · Sub-GHz CC1101 · Infrarossi · BadUSB/HID · Loot/microSD ·
+Impostazioni. **Doppio orientamento** (verticale/orizzontale) salvato in NVS.
 
-## Ecosistema NexusSec (la "costellazione")
-NexusSec ESP32 è il **gadget hardware** di una famiglia di strumenti che
-condividono brand e filosofia (tutto in casa, minimale, in italiano):
+## Compilare
+Serve **PlatformIO** (`pip install platformio`).
+```bash
+cd firmware
+pio run                    # compila sim + hw
+pio run -e esp32-div-v2    # solo simulatore
+pio run -t upload          # flash via USB-C (esptool)
+pio device monitor         # log seriale 115200
+```
 
-- **[NexusSec OS](https://github.com/RedRider21/NexusSec-OS)** — la distro live
-  di cybersecurity (Alpine + Openbox + pannello Python). Prepara e **flesha
-  l'ESP32** con uno dei profili, e ne **importa i risultati** (wardriving in
-  HORUS, handshake/PMKID nel loot).
-- **[Vesper](https://github.com/RedRider21/vesper)** — l'ambiente desktop
-  Python/GTK estratto da NexusSec.
-- **[Termux-NexusSEC-OS](https://github.com/RedRider21/Termux-NexusSEC-OS)** — la
-  versione Android (Termux + Kali proot + PWA).
+## Provare senza scheda (simulatore Wokwi)
+VS Code + estensione **Wokwi**: `pio run`, apri `firmware/diagram.json`, premi Play.
 
-La distro **NexusSec OS** sarà in grado di **flashare direttamente l'ESP32** con
-uno dei profili prescelti (Ricognizione / Attacco WiFi / Handshake / Bluetooth /
-BadUSB), via `esptool`, e di raccogliere ciò che il gadget cattura.
+## Flashare
+- **Dal browser** (Chrome/Edge desktop): [flash.html](https://redrider21.github.io/nexussec-esp32/flash.html)
+  — NexusSec (full) o ripristino firmware originale.
+- **CLI**: `esptool.py --chip esp32s3 write_flash 0x0 docs/flash/bin/nexussec-esp32-full.bin`
+- **Dalla distro** (in sviluppo): tool `nxs-esp32` — vedi
+  [`docs/nxs-esp32-integration.md`](docs/nxs-esp32-integration.md).
 
-## Note
-- Stack: **Arduino‑ESP32** o **ESP‑IDF** (C/C++).
-- Uso **solo su target autorizzati** (pentest/lab): deauth/rogue AP/BadUSB sono
-  tecniche offensive.
-- Dettagli e fasi: [`docs/plan.md`](docs/plan.md). Istruzioni per l'assistente:
-  [`CLAUDE.md`](CLAUDE.md).
+## Integrazione con NexusSec OS
+Flash con profilo via `nxs-esp32` (esptool) + import: wardriving → **HORUS**,
+handshake/PMKID → **loot**. Specifica in `docs/nxs-esp32-integration.md`.
+
+## Licenza ed etica
+Firmware NexusSec: nostro. Il firmware **originale** in `firmware/vendor/` è di
+**CiferTech** (licenza **MIT**), tenuto solo per il ripristino. Uso consentito
+**solo su hardware/reti autorizzati**.
+
+## Manuale
+Guida completa (uso del dispositivo, ogni modulo, flash, sviluppo):
+[`docs/manuale.md`](docs/manuale.md).

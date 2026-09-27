@@ -1,0 +1,13 @@
+{
+  "name": "NexusSec ESP32 (full)",
+  "version": "0.1.0",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32-S3",
+      "parts": [
+        { "path": "bin/nexussec-esp32-full.bin", "offset": 0 }
+      ]
+    }
+  ]
+}

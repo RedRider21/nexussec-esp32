@@ -114,6 +114,7 @@ footer{border-top:1px solid var(--line);padding:34px 0;color:var(--dim);font-siz
   <span class="sp"></span>
   <button class="tbtn" id="langBtn"><span id="langLbl">EN</span></button>
   <button class="tbtn" id="themeBtn">🌓</button>
+  <a class="tbtn" href="flash.html">⚡ Flash</a>
   <a class="tbtn" href="https://github.com/RedRider21/nexussec-esp32">GitHub</a>
 </div></nav>
 
@@ -125,7 +126,7 @@ footer{border-top:1px solid var(--line);padding:34px 0;color:var(--dim);font-siz
     <span data-lang="it">Un multi-tool wireless in stile Flipper basato su <b>ESP32-DIV V2</b>: WiFi/BLE, 2,4 GHz (NRF24), sub-GHz (CC1101) e infrarossi in un solo gadget. È il corollario hardware di NexusSec: la distro <b>NexusSec OS</b> lo flesha con un profilo e ne raccoglie i risultati.</span>
     <span data-lang="en">A Flipper-style wireless multi-tool based on <b>ESP32-DIV V2</b>: WiFi/BLE, 2.4 GHz (NRF24), sub-GHz (CC1101) and infrared in one gadget. The hardware corollary of NexusSec: the <b>NexusSec OS</b> distro flashes it with a profile and gathers its results.</span>
   </p>
-  <div class="badge"><span data-lang="it">Stato: scaffold — piano pronto, firmware da sviluppare</span><span data-lang="en">Status: scaffold — plan ready, firmware to be developed</span></div>
+  <div class="badge"><span data-lang="it">Stato: firmware v0.1.0 (beta) — 8 moduli, compila · da provare su hardware</span><span data-lang="en">Status: firmware v0.1.0 (beta) — 8 modules, builds · to be tested on hardware</span></div>
 </div></header>
 
 <section><div class="wrap">
@@ -156,6 +157,24 @@ footer{border-top:1px solid var(--line);padding:34px 0;color:var(--dim);font-siz
   </div>
 </div></section>
 
+<style>
+  .shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:16px;margin-top:18px}
+  figure.shot{margin:0;text-align:center}
+  figure.shot img{width:100%;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:#05090c;display:block}
+  figure.shot figcaption{font-size:12px;color:var(--lead);margin-top:7px;font-family:ui-monospace,monospace}
+</style>
+<section><div class="wrap">
+  <h2><span data-lang="it">L'interfaccia (screenshot)</span><span data-lang="en">The interface (screenshots)</span></h2>
+  <p class="sub"><span data-lang="it">Schermate del firmware NexusSec sul display 320×240 (verticale). UI flat, accent cyan, menu a profili.</span><span data-lang="en">NexusSec firmware screens on the 320×240 display (portrait). Flat UI, cyan accent, profile menu.</span></p>
+  <div class="shots">
+    <figure class="shot"><img src="img/shot-home.png" alt="Menu profili" loading="lazy"><figcaption>Menu profili</figcaption></figure>
+    <figure class="shot"><img src="img/shot-wifi_recon.png" alt="Recon WiFi" loading="lazy"><figcaption>Recon WiFi</figcaption></figure>
+    <figure class="shot"><img src="img/shot-wardriving.png" alt="Wardriving" loading="lazy"><figcaption>Wardriving</figcaption></figure>
+    <figure class="shot"><img src="img/shot-subghz.png" alt="Sub-GHz CC1101" loading="lazy"><figcaption>Sub-GHz CC1101</figcaption></figure>
+    <figure class="shot"><img src="img/shot-badusb.png" alt="BadUSB / HID" loading="lazy"><figcaption>BadUSB / HID</figcaption></figure>
+  </div>
+</div></section>
+
 <section><div class="wrap">
   <h2><span data-lang="it">Il collegamento con NexusSec OS</span><span data-lang="en">The link with NexusSec OS</span></h2>
   <div class="grid">
@@ -174,6 +193,13 @@ footer{border-top:1px solid var(--line);padding:34px 0;color:var(--dim);font-siz
 <section><div class="wrap">
   <h2><span data-lang="it">La scheda di riferimento: ESP32-DIV V2</span><span data-lang="en">Reference board: ESP32-DIV V2</span></h2>
   <p class="sub"><span data-lang="it">Multi-tool open-source di <a href="https://github.com/cifertech/ESP32-DIV">CiferTech</a> (licenza MIT). Più radio in una scheda tascabile.</span><span data-lang="en">Open-source multi-tool by <a href="https://github.com/cifertech/ESP32-DIV">CiferTech</a> (MIT license). Several radios in one pocket board.</span></p>
+  <figure style="margin:0 0 20px">
+    <img src="img/esp32-div-v2-pcb.jpg" alt="Render PCB della ESP32-DIV V2 (53×100 mm)" loading="lazy"
+         style="width:100%;max-width:360px;display:block;margin:0 auto;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:#000">
+    <figcaption style="text-align:center;font-size:12px;color:var(--lead);margin-top:8px;font-family:ui-monospace,monospace">
+      <span data-lang="it">Render PCB — 53×100 mm · © CiferTech (MIT)</span><span data-lang="en">PCB render — 53×100 mm · © CiferTech (MIT)</span>
+    </figcaption>
+  </figure>
   <ul class="plain">
     <li><span class="k">▸</span><div><b>MCU</b> — <span data-lang="it">ESP32-S3, 16 MB flash (dual-core, USB nativa → BadUSB, BLE5).</span><span data-lang="en">ESP32-S3, 16 MB flash (dual-core, native USB → BadUSB, BLE5).</span></div></li>
     <li><span class="k">▸</span><div><b data-lang="it">Radio</b><b data-lang="en">Radios</b> — <span data-lang="it">WiFi + BLE, 3× NRF24L01 (2,4 GHz), CC1101 (sub-GHz), ricetrasmettitore infrarossi.</span><span data-lang="en">WiFi + BLE, 3× NRF24L01 (2.4 GHz), CC1101 (sub-GHz), infrared transceiver.</span></div></li>

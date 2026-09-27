@@ -1,0 +1,13 @@
+{
+  "name": "ESP32-DIV originale (CiferTech)",
+  "version": "1.7.2",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32-S3",
+      "parts": [
+        { "path": "bin/esp32-div-v2-original-merged.bin", "offset": 0 }
+      ]
+    }
+  ]
+}

@@ -311,6 +311,13 @@
 
   .foot{margin-top:26px; text-align:center; font-size:12px; color:var(--ink-faint);}
   a{color:var(--brand-ink);}
+
+  /* modalità kiosk (#kiosk:<schermata>): solo il dispositivo, per gli screenshot */
+  body.kiosk .top, body.kiosk .side, body.kiosk .foot, body.kiosk .hint{display:none!important;}
+  body.kiosk{background:#05090c!important;}
+  body.kiosk .layout{grid-template-columns:1fr;}
+  body.kiosk .wrap{padding:14px; max-width:420px;}
+  body.kiosk .stage{gap:0;}
 </style>
 
 <div class="wrap">
@@ -836,7 +843,8 @@ devSel.addEventListener('change',()=>{ dev=devSel.value; orient=DEVICES[dev].def
 
 loadPrefs();
 applyUI();
-const startHash=(location.hash||'').replace('#','');
-go(SCREENS[startHash]?startHash:'boot');
+let rawHash=(location.hash||'').replace('#','');
+if(rawHash.indexOf('kiosk:')===0){ document.body.classList.add('kiosk'); rawHash=rawHash.slice(6); }
+go(SCREENS[rawHash]?rawHash:'boot');
 </script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=Share+Tech+Mono&display=swap">
