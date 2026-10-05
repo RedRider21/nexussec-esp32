@@ -68,12 +68,12 @@ def build(part, battery=False):
         lsolid = extrude_any(logo, 1.2); lsolid.apply_translation([0, 0, -0.2])
         cuts.append(lsolid)
     else:
-        # finestra display (~58x35) nella zona scheda
-        cuts.append(bx(58, 35, D*3, bc-14, 0, D/2))
-        # griglia 6 tasti (2x3) a destra della finestra, zona scheda
-        for cxo in (34, 44):
-            for cyo in (-11, 0, 11):
-                cuts.append(bx(7.5, 7.5, D*3, bc+cxo, cyo, D/2))
+        # finestra display (2.8" ~ 55x41) nella zona scheda
+        cuts.append(bx(55, 41, D*3, bc-16, 0, D/2))
+        # tasti a CROCE (D-pad: centro + su/giu/sx/dx) come il riferimento reale
+        bcx, pitch, bs = 36.0, 9.5, 7.0
+        for dx, dy in [(0, 0), (0, 1), (0, -1), (-1, 0), (1, 0)]:
+            cuts.append(bx(bs, bs, D*3, bc+bcx+dx*pitch, dy*pitch, D/2))
 
     m = trimesh.boolean.union([shell] + adds) if adds else shell
     m = trimesh.boolean.difference([m] + cuts)
