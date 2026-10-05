@@ -11,13 +11,13 @@ Feature (finestra display, 6 tasti, antenne, porte) in posizione APPROSSIMATA:
 v0 BETA da validare su hardware.
 
 Uso:  python3 build_our_case.py
-Output: docs/case-nexussec/nexussec-case-{back,front}[-bat].{stl,glb}
+Output: docs/case/case-nexussec/nexussec-case-{back,front}[-bat].{stl,glb}
 """
 import os, sys
 import numpy as np
 import trimesh
 from shapely.geometry import box
-from shapely.affinity import translate as sh_translate, scale as sh_scale
+from shapely.affinity import translate as sh_translate, scale as sh_scale, rotate as sh_rotate
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from personalize_case import build_logo, extrude_any, FONT_H
 
@@ -37,10 +37,12 @@ def cyl(d, h, x, y, z):
 DISP_W, DISP_H, DISP_CX = 60.0, 44.5, -7.25      # finestra display + offset x dal centro
 DPAD_CX, DPAD_BS, DPAD_PX, DPAD_PY = 37.0, 6.6, 6.7, 9.0   # croce tasti
 
-def logo_solid(layout, target_w, bc, outer=False):
+def logo_solid(layout, target_w, bc, outer=False, rot=0):
     """Prisma del logo da sottrarre. outer=True (front, faccia +z): niente specchio;
-    altrimenti (back, faccia -z): specchio x per leggerlo da fuori."""
+    altrimenti (back, faccia -z): specchio x per leggerlo da fuori. rot: gradi CCW."""
     lg = build_logo(layout, target_w, FONT_H)
+    if rot:
+        lg = sh_rotate(lg, rot, origin=(0, 0))
     if not outer:
         lg = sh_scale(lg, xfact=-1, yfact=1, origin=(0, 0))
     lg = sh_translate(lg, bc, 0)
@@ -87,9 +89,11 @@ def build(part, battery=False):
             xdiv = Lx/2 - BAT[0] - WALL*1.5
             adds.append(bx(WALL, Wd-2*WALL, D-PLATE, xdiv, 0, (D-PLATE)/2))
             cuts.append(bx(WALL*3, 7, 5, xdiv, 0, 2.5))     # notch passacavo (al seam col back)
-            # logo sul FRONTE, nell'area batteria estesa (+x), inciso dalla faccia +z
-            xlogo = (L/2 + Lx/2) / 2.0
-            ls = logo_solid('h', 52.0, 0, outer=True); ls.apply_translation([xlogo, 0, D-0.9]); cuts.append(ls)
+            # logo sul FRONTE area batteria: VERTICALE (leggibile col case in portrait),
+            # centrato nell'area estesa cosi' non sborda
+            xlogo = (xdiv + Lx/2) / 2.0
+            ls = logo_solid('v', 40.0, 0, outer=True, rot=90)
+            ls.apply_translation([xlogo, 0, D-0.9]); cuts.append(ls)
 
     m = trimesh.boolean.union([shell] + adds) if adds else shell
     m = trimesh.boolean.difference([m] + cuts)
@@ -100,7 +104,7 @@ if __name__ == "__main__":
             ("back", True, "battery/back"), ("front", True, "battery/front")]
     for part, bat, name in jobs:
         m = build(part, bat)
-        p = "docs/case-nexussec/%s" % name
+        p = "docs/case/case-nexussec/%s" % name
         os.makedirs(os.path.dirname(p), exist_ok=True)
         m.export(p+".stl"); m.export(p+".glb")
         print("%-16s watertight=%s dims=%s" % (name, m.is_watertight, np.round(m.extents, 1)))

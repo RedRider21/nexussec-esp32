@@ -6,5 +6,6 @@ __pycache__/
 !firmware/vendor/*.bin
 !docs/flash/bin/*.bin
 
-# case: file di terzi (licenza MakerWorld) + render 3D -> solo locale
-docs/case/
+# case: file di terzi/personali -> locale, TRANNE il NOSTRO case-nexussec (pubblicabile)
+docs/case/*
+!docs/case/case-nexussec/
