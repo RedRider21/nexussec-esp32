@@ -5,3 +5,6 @@ __pycache__/
 # eccezioni: firmware "deliverable" da versionare
 !firmware/vendor/*.bin
 !docs/flash/bin/*.bin
+
+# case: file di terzi (licenza MakerWorld) + render 3D -> solo locale
+docs/case/
