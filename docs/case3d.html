@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8">
+<title>Case 3D NexusSec ESP32</title>
+<meta name="description" content="Case 3D stampabile NexusSec ESP32 (nostro design): anteprima e download.">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Mono&display=swap">
+<style>
+ :root{--bg:#070c14;--ink:#cfe0ea;--dim:#8aa0b0;--accent:#00e5ff;--line:#173042;--mono:"IBM Plex Mono",monospace;--disp:"Chakra Petch",sans-serif;color-scheme:dark}
+ *{box-sizing:border-box}html,body{height:100%}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--mono);display:flex;flex-direction:column}
+ header{padding:10px 14px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+ .t{font-family:var(--disp);font-weight:700}.t b{color:var(--accent)}.sp{flex:1}
+ a.back{font-family:var(--disp);font-size:12px;color:var(--dim);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:6px 12px}a.back:hover{border-color:var(--accent);color:var(--accent)}
+ select,button,a.dl{font-family:var(--disp);font-size:13px;color:var(--ink);background:#0b1421;border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;text-decoration:none}
+ a.dl{color:#04121a;background:var(--accent);border-color:var(--accent);font-weight:700}
+ .sw{display:flex;gap:6px;align-items:center}.sw button{width:24px;height:24px;padding:0;border-radius:50%;box-shadow:0 0 0 1px var(--line)}.sw button.on{box-shadow:0 0 0 2px var(--accent)}
+ .lbl{font-size:11px;color:var(--dim)}
+ #stage{flex:1;position:relative;min-height:0}#hint{position:absolute;left:0;right:0;bottom:8px;text-align:center;font-size:11px;color:var(--dim);pointer-events:none}#hint b{color:var(--accent)}
+ footer{padding:8px 14px;border-top:1px solid var(--line);font-size:11px;color:var(--dim);text-align:center}
+</style></head><body>
+<header><span class="t">Case 3D · <b>NexusSec ESP32</b></span>
+ <select id="sel">
+  <option value="standard/back">Standard · Retro (logo)</option>
+  <option value="standard/front">Standard · Fronte</option>
+  <option value="battery/back">Batteria · Retro (logo)</option>
+  <option value="battery/front">Batteria · Fronte</option>
+ </select>
+ <span class="lbl">colore:</span><span class="sw" id="sw"></span>
+ <a class="dl" id="dl" href="#" download>⬇ STL</a>
+ <span class="sp"></span><button id="rot">Auto-rot</button><a class="back" href="index.html">← Sito</a></header>
+<div id="stage"><div id="hint">Trascina per ruotare · rotella zoom · il <b>retro</b> mostra il logo · scarica lo <b>STL</b></div></div>
+<footer>Design <b style="color:var(--accent)">NexusSec</b> · v0 beta (da validare su hardware) · LiPo consigliata 103450. Stampa: PETG/PLA-CF, 0,16 mm, 20–30%.</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const BASE="case-nexussec/";
+const COLORS=[["Grigio",0x8aa6b8],["Nero",0x202832],["Bianco",0xe8edf0],["Carbonio",0x33404a],["Cyan",0x19b8c6],["Arancio",0xe07b2a],["Rosso",0xc0384a],["Verde",0x2f9e5a],["Blu",0x2f5bd0]];
+let curColor=0x8aa6b8,cur=null;
+const stage=document.getElementById('stage');let W=stage.clientWidth,H=stage.clientHeight;
+const r=new THREE.WebGLRenderer({antialias:true});r.setPixelRatio(Math.min(2,devicePixelRatio||1));r.setSize(W,H);
+r.outputEncoding=THREE.sRGBEncoding;r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=1.15;stage.appendChild(r.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x070c14);
+const cam=new THREE.PerspectiveCamera(42,W/H,1,5000);
+scene.add(new THREE.HemisphereLight(0xbfe9ff,0x0a141c,0.75));scene.add(new THREE.AmbientLight(0xffffff,0.55));
+let d=new THREE.DirectionalLight(0xffffff,1.7);d.position.set(-80,120,-150);scene.add(d);
+let d2=new THREE.DirectionalLight(0x59c8e6,0.7);d2.position.set(120,20,-40);scene.add(d2);
+let d3=new THREE.DirectionalLight(0xffffff,0.6);d3.position.set(60,-80,160);scene.add(d3);
+const ctr=new THREE.OrbitControls(cam,r.domElement);ctr.enableDamping=true;ctr.autoRotate=true;ctr.autoRotateSpeed=1.1;
+function applyColor(){if(cur)cur.traverse(o=>{if(o.isMesh)o.material.color.setHex(curColor);});}
+function load(key){
+ const isBack=key.indexOf('back')>=0;
+ document.getElementById('dl').href=BASE+key+".stl";
+ fetch(BASE+key+".glb").then(x=>x.arrayBuffer()).then(buf=>{
+  if(cur){scene.remove(cur);cur.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.dispose();}});}
+  new THREE.GLTFLoader().parse(buf,'',function(g){
+   const o=g.scene;o.traverse(x=>{if(x.isMesh){x.geometry.computeVertexNormals();x.material=new THREE.MeshStandardMaterial({color:curColor,metalness:0,roughness:0.62,flatShading:true});}});
+   const box=new THREE.Box3().setFromObject(o);const c=box.getCenter(new THREE.Vector3());o.position.sub(c);scene.add(o);cur=o;
+   const s=box.getSize(new THREE.Vector3());const md=Math.max(s.x,s.y,s.z);
+   cam.position.set(md*0.3,md*0.35,(isBack?-1:1)*md*1.5);ctr.target.set(0,0,0);ctr.update();
+  });
+ });
+}
+const sw=document.getElementById('sw');
+COLORS.forEach((c,i)=>{const b=document.createElement('button');b.style.background="#"+c[1].toString(16).padStart(6,'0');if(i==0)b.classList.add('on');b.title=c[0];
+ b.onclick=()=>{curColor=c[1];applyColor();[...sw.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');};sw.appendChild(b);});
+document.getElementById('sel').onchange=e=>load(e.target.value);
+document.getElementById('rot').onclick=()=>{ctr.autoRotate=!ctr.autoRotate};
+addEventListener('resize',()=>{W=stage.clientWidth;H=stage.clientHeight;cam.aspect=W/H;cam.updateProjectionMatrix();r.setSize(W,H);});
+load('standard/back');(function loop(){requestAnimationFrame(loop);ctr.update();r.render(scene,cam);})();
+</script></body></html>
