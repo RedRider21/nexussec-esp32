@@ -23,9 +23,13 @@ from personalize_case import build_logo, extrude_any, FONT_H
 
 L, Wd, R = 105.5, 59.0, 5.0        # esterne standard (x,y) + raggio
 WALL, BACK_D, FRONT_D = 2.4, 15.4, 8.6
-SCREW_INSET, SCREW_D, HEAD_D = 5.5, 3.0, 5.6
+SCREW_INSET, SCREW_D, HEAD_D = 5.0, 2.4, 4.6   # 4 fori angolo (M2), allineati front<->back come negli originali
 BAT_BAY = 56.0                      # allungamento per il vano batteria
 BAT = (52.0, 36.0, 11.0)           # vano interno per LiPo 103450 (x,y,z)
+
+# --- antenne: PARAMETRICO. L'hardware confermato (foto scheda + case DownLord/0xrphl)
+# ha 4 SMA su UN solo lato corto. Se la tua scheda ne monta 5, metti NUM_ANT=5. ---
+NUM_ANT, ANT_PITCH, ANT_W, ANT_H = 4, 11.0, 8.0, 7.0
 
 def rrect(w, h, r): return box(-w/2+r, -h/2+r, w/2-r, h/2-r).buffer(r, quad_segs=14)
 def bx(w, h, d, x, y, z):
@@ -33,9 +37,12 @@ def bx(w, h, d, x, y, z):
 def cyl(d, h, x, y, z):
     c = trimesh.creation.cylinder(radius=d/2, height=h, sections=32); c.apply_translation([x, y, z]); return c
 
-# --- quote MISURATE dal front originale DownLord (origine = centro) ---
-DISP_W, DISP_H, DISP_CX = 60.0, 44.5, -7.25      # finestra display + offset x dal centro
-DPAD_CX, DPAD_BS, DPAD_PX, DPAD_PY = 37.0, 6.6, 6.7, 9.0   # croce tasti
+# --- quote MISURATE dagli originali DownLord + 0xrphl (origine = centro) ---
+DISP_W, DISP_H, DISP_CX = 60.0, 44.5, -7.0       # finestra display 59.2x43.8 @ centro x=46 -> -7
+DPAD_CX, DPAD_BS, DPAD_PX, DPAD_PY = 37.0, 5.3, 6.7, 9.0   # croce tasti (foro ~5.2 misurato)
+# porte misurate al seam (giunzione back/front):
+USB_YC = 15.5 - Wd/2            # USB-C su lato corto, offset y come originali (~ -13.5 dal centro)
+SD_XC  = 20.0                   # microSD su lato lungo, offset x dal centro-scheda
 
 def logo_solid(layout, target_w, bc, outer=False, rot=0):
     """Prisma del logo da sottrarre. outer=True (front, faccia +z): niente specchio;
@@ -60,19 +67,30 @@ def build(part, battery=False):
     shell = trimesh.boolean.difference([outer, inner])
     cuts, adds = [], []
 
-    # antenne: 4 SMA (max reale) sul lato corto alto (-x), misura 8x7, passo ~11
-    z_ant = (D-3.5) if part == 'back' else 3.5   # al seam: bordo alto back / basso front
-    for yy in (-16.5, -5.5, 5.5, 16.5):
-        cuts.append(bx(WALL*3, 8.0, 7.0, -Lx/2, yy, z_ant))
+    # antenne (PARAMETRICHE: NUM_ANT): lato corto alto (-x), al seam
+    z_ant = (D-3.5) if part == 'back' else 3.5   # bordo alto back / basso front
+    y0 = -(NUM_ANT-1)*ANT_PITCH/2.0
+    for i in range(NUM_ANT):
+        cuts.append(bx(WALL*3, ANT_W, ANT_H, -Lx/2, y0 + i*ANT_PITCH, z_ant))
+
+    # viti: 4 angoli, SU ENTRAMBE le parti -> fori allineati front<->back (come originali)
+    z_seam = D if part == 'back' else 0.0        # le porte stanno a cavallo della giunzione
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            X, Y = sx*(Lx/2-SCREW_INSET), sy*(Wd/2-SCREW_INSET)
+            cuts.append(cyl(SCREW_D, D*3, X, Y, D/2))               # foro passante
+            if part == 'back':
+                cuts.append(cyl(HEAD_D, 2.2, X, Y, 1.1-0.01))       # svaso testa sul fondo esterno
+
+    # porte al SEAM (metà nel back, metà nel front). Misure dagli originali.
+    if battery:                                                      # il lato corto +x e' il vano batteria
+        cuts.append(bx(10.0, WALL*3, 6.5, bc+L/2-8, -Wd/2, z_seam))  # USB-C spostata sul lato lungo
+    else:
+        cuts.append(bx(WALL*3, 9.5, 6.5, Lx/2, USB_YC, z_seam))      # USB-C sul lato corto +x (opposto antenne)
+    cuts.append(bx(12.0, WALL*3, 6.5, bc+SD_XC, -Wd/2, z_seam))      # microSD (lato lungo -y)
+    cuts.append(bx(12.0, WALL*3, 6.5, bc-6.0, Wd/2, z_seam))         # tasti BOOT/RST (lato lungo +y)
 
     if part == 'back':
-        for sx in (-1, 1):
-            for sy in (-1, 1):
-                cuts += [cyl(SCREW_D, D*2, sx*(Lx/2-SCREW_INSET), sy*(Wd/2-SCREW_INSET), D/2),
-                         cyl(HEAD_D, 2.0, sx*(Lx/2-SCREW_INSET), sy*(Wd/2-SCREW_INSET), 1.0-0.01)]
-        # porte: USB-C (lato lungo -y) e microSD (lato lungo +y), zona scheda
-        cuts.append(bx(11, WALL*3, 4.5, bc+40, -Wd/2, WALL+5))
-        cuts.append(bx(16, WALL*3, 2.6, bc+20, Wd/2, WALL+4))
         if battery:
             xdiv = Lx/2 - BAT[0] - WALL*1.5
             adds.append(bx(WALL, Wd-2*WALL, D-WALL, xdiv, 0, D/2+WALL/2))

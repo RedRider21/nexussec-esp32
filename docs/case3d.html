@@ -34,8 +34,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="case/case-nexussec/case3d-models.js"></script>
 <script>
 const BASE="case/case-nexussec/";
+function b64buf(b64){const bin=atob(b64);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u.buffer;}
 const COLORS=[["Grigio",0x8aa6b8],["Nero",0x202832],["Bianco",0xe8edf0],["Carbonio",0x33404a],["Cyan",0x19b8c6],["Arancio",0xe07b2a],["Rosso",0xc0384a],["Verde",0x2f9e5a],["Blu",0x2f5bd0]];
 let curColor=0x8aa6b8,cur=null;
 const stage=document.getElementById('stage');let W=stage.clientWidth,H=stage.clientHeight;
@@ -52,14 +54,14 @@ function applyColor(){if(cur)cur.traverse(o=>{if(o.isMesh)o.material.color.setHe
 function load(key){
  const isBack=key.indexOf('back')>=0;
  document.getElementById('dl').href=BASE+key+".stl";
- fetch(BASE+key+".glb").then(x=>x.arrayBuffer()).then(buf=>{
-  if(cur){scene.remove(cur);cur.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.dispose();}});}
-  new THREE.GLTFLoader().parse(buf,'',function(g){
-   const o=g.scene;o.traverse(x=>{if(x.isMesh){x.geometry.computeVertexNormals();x.material=new THREE.MeshStandardMaterial({color:curColor,metalness:0,roughness:0.62,flatShading:true});}});
-   const box=new THREE.Box3().setFromObject(o);const c=box.getCenter(new THREE.Vector3());o.position.sub(c);scene.add(o);cur=o;
-   const s=box.getSize(new THREE.Vector3());const md=Math.max(s.x,s.y,s.z);
-   cam.position.set(md*0.3,md*0.35,(isBack?-1:1)*md*1.5);ctr.target.set(0,0,0);ctr.update();
-  });
+ const b64=window.CASE_MODELS&&window.CASE_MODELS[key];
+ if(!b64){document.getElementById('hint').innerHTML='<b>modello non trovato</b>: '+key;return;}
+ if(cur){scene.remove(cur);cur.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.dispose();}});}
+ new THREE.GLTFLoader().parse(b64buf(b64),'',function(g){
+  const o=g.scene;o.traverse(x=>{if(x.isMesh){x.geometry.computeVertexNormals();x.material=new THREE.MeshStandardMaterial({color:curColor,metalness:0,roughness:0.62,flatShading:true});}});
+  const box=new THREE.Box3().setFromObject(o);const c=box.getCenter(new THREE.Vector3());o.position.sub(c);scene.add(o);cur=o;
+  const s=box.getSize(new THREE.Vector3());const md=Math.max(s.x,s.y,s.z);
+  cam.position.set(md*0.3,md*0.35,(isBack?-1:1)*md*1.5);ctr.target.set(0,0,0);ctr.update();
  });
 }
 const sw=document.getElementById('sw');
